@@ -8,6 +8,7 @@ use warnings;
 
 my $gfa_var_file;
 my @pack_files = ();
+my $pack_list_file;
 my %seg_lens = ();
 my $min_tot_cov = 3;
 my $max_low_cov_tot_cov = 9;
@@ -39,7 +40,7 @@ exit(0);
 
 
 sub print_gfa_var_gts {
-	open(GFA_VARS, '<', $gfa_var_file) or error("$!");
+	open(GFA_VARS, '<', $gfa_var_file) or error("can't open gfa var file: $!");
 
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
@@ -212,7 +213,7 @@ sub parse_pack_file {
 
 	push(@file_bases, $file_base);
 
-	open(PACK, '<', $pack_file) or error("$!");
+	open(PACK, '<', $pack_file) or error("can't open pack file: $!");
 
 	while (my $line = <PACK>) {
 		chomp($line);
@@ -263,7 +264,7 @@ sub parse_pack_file {
 
 		my $cov_histo_file = "$hist_dir/$file_base.cov.histo";
 
-		open(COV, '>', $cov_histo_file) or error("$!");
+		open(COV, '>', $cov_histo_file) or error("can't open cov histo file: $!");
 
 		foreach my $cov (sort { $a <=> $b } keys %cov_histo) {
 			print(COV "$cov\t$cov_histo{$cov}\n");
@@ -290,7 +291,7 @@ sub parse_pack_file {
 
 
 sub parse_gfa_var_file {
-	open(GFA_VARS, '<', $gfa_var_file) or error("$!");
+	open(GFA_VARS, '<', $gfa_var_file) or error("can't open gfa var file: $!");
 
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
@@ -372,7 +373,8 @@ sub parse_args {
 	}
 
 	GetOptions ('v|var=s' => \$gfa_var_file,
-				'p|pack=s{1,}' => \@pack_files,
+				'p|pack=s{,}' => \@pack_files,
+				'packlist=s' => \$pack_list_file,
 				'ploidy=i' => \$ploidy,
 				'm|model' => \$use_model,
 				'modeldir=s' => \$model_dir,
@@ -389,6 +391,18 @@ sub parse_args {
 
 	if (! defined($gfa_var_file)) {
 		arg_error('gfa variants file required');
+	}
+
+	if (defined($pack_list_file)) {
+		open(PACKLIST, '<', $pack_list_file) or error("can't open pack list file: $!");
+
+		foreach my $line (<PACKLIST>) {
+			chomp($line);
+
+			push(@pack_files, $line);
+		}
+
+		close(PACKLIST);
 	}
 
 	if (! @pack_files) {
@@ -437,7 +451,10 @@ Brian Abernathy
 
  -v --var     gfa variants file (required)
 
- -p --pack    vg pack table file(s) (required)
+ -p --pack    vg pack table file(s)
+
+ --packlist   text file containing list of pack file paths
+                1 file per line
 
  --ploidy     1 (haploid) or 2 (diploid) currently supported
                 default: 1

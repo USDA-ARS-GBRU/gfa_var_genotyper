@@ -1,5 +1,7 @@
 # gfa_var_genotyperUsage:
 
+Usage:
+
     gfa_var_genotyper.pl [options]
 
 Options:
@@ -8,7 +10,10 @@ Options:
 
      -v --var     gfa variants file (required)
 
-     -p --pack    vg pack table file(s) (required)
+     -p --pack    vg pack table file(s)
+
+     --packlist   text file containing list of pack file paths
+                    1 file per line
 
      --ploidy     1 (haploid) or 2 (diploid) currently supported
                     default: 1
