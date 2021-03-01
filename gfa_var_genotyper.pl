@@ -208,12 +208,14 @@ sub parse_pack_file {
 	my %seg_covs = ();
 	my $file_base = $pack_file;
 
+	open(PACK, '<', $pack_file) or error("can't open pack file: $!");
+
+	print(STDERR "processing pack file: $pack_file\n");
+
 	$file_base =~ s/^.*\///;
 	$file_base =~ s/\..*$//;
 
 	push(@file_bases, $file_base);
-
-	open(PACK, '<', $pack_file) or error("can't open pack file: $!");
 
 	while (my $line = <PACK>) {
 		chomp($line);
