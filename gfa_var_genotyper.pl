@@ -10,6 +10,7 @@ my $gfa_var_file;
 my @pack_files = ();
 my $pack_list_file;
 my %seg_lens = ();
+my %gfa_segs = ();
 my $min_tot_cov = 3;
 my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
@@ -21,8 +22,8 @@ my $gs_exec;
 my $kmer_size = 31;
 my $help;
 
-my %rec_var_seg_gts = ();
-my %rec_gt_var_segs = ();
+my %rec_seg_gts = ();
+my %rec_gt_segs = ();
 my %rec_id_allele_counts = ();
 my %pack_covs = ();
 my @file_bases = ();
@@ -75,11 +76,11 @@ sub print_gfa_var_gts {
 			foreach my $gt (0..$allele_count - 1) {
 				my $cov = 0;
 
-				if (exists($rec_gt_var_segs{$rec_id}{$gt})) {
-					my $var_seg = $rec_gt_var_segs{$rec_id}{$gt};
+				if (exists($rec_gt_segs{$rec_id}{$gt})) {
+					my $seg = $rec_gt_segs{$rec_id}{$gt};
 
-					if (exists($pack_covs{$file_base}{$var_seg})) {
-						$cov = $pack_covs{$file_base}{$var_seg};
+					if (exists($pack_covs{$file_base}{$seg})) {
+						$cov = $pack_covs{$file_base}{$seg};
 					}
 				}
 
@@ -248,6 +249,10 @@ sub parse_pack_file {
 	close(PACK);
 
 	foreach my $node_id (keys %seg_covs) {
+		if (! exists($gfa_segs{$node_id})) {
+			next();
+		}
+
 		my $len = $seg_lens{$node_id};
 		my $cov = $seg_covs{$node_id};
 		my $avg_cov = int(($cov / $len) + 0.5);
@@ -332,10 +337,11 @@ sub parse_gfa_var_file {
 		$rec_id_allele_counts{$rec_id} = $#alleles + 1;
 
 		foreach my $gt (0..$#alleles) {
-			my $var_seg = $alleles[$gt];
+			my $seg = $alleles[$gt];
 
-			$rec_gt_var_segs{$rec_id}{$gt} = $var_seg;
-			$rec_var_seg_gts{$rec_id}{$var_seg} = $gt;
+			$gfa_segs{$seg}++;
+			$rec_gt_segs{$rec_id}{$gt} = $seg;
+			$rec_seg_gts{$rec_id}{$seg} = $gt;
 		}
 	}
 
