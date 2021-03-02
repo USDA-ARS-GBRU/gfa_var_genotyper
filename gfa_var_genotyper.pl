@@ -47,14 +47,14 @@ sub print_gfa_var_gts {
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
 
-		my ($chr, $pos, $id, $ref, $alts, $filter, $info, $format, @gts) = split(/\t/, $line);
+		my ($chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts) = split(/\t/, $line);
 
 		if (! defined($id)) {
 			next();
 		}
 
 		if ($chr eq 'CHROM') {
-			print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $filter, $info, $format, @gts, @file_bases), "\n");
+			print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts, @file_bases), "\n");
 
 			next();
 		}
@@ -62,11 +62,23 @@ sub print_gfa_var_gts {
 		my $rec_id = "$chr\t$pos\t$id";
 		my $allele_count = $rec_id_allele_counts{$rec_id};
 
-		my $mod_line = $line;
+		if ($pos =~ /^\-/) {
+			my $warning = 'warning: negative head node suffix found, see --rm_inv_head option for more information';
 
-		$mod_line =~ s/GT/GT:AD/;
+			if ($info eq '.') {
+				$info = "$warning";
+			}
 
-		print(STDOUT "$mod_line");
+			else {
+				$info .= ", $warning";
+			}
+
+			print(STDERR "$warning\n\tPOS: $pos\n");
+		}
+
+		$format .= ':AD';
+
+		print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts));
 
 		foreach my $file_base (@file_bases) {
 			my %gt_cov = ();
@@ -304,7 +316,7 @@ sub parse_gfa_var_file {
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
 
-		my ($chr, $pos, $id, $ref, $alts, $filter, $info, $format, @gts) = split(/\t/, $line);
+		my ($chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts) = split(/\t/, $line);
 
 		if (! defined($id)) {
 			next();
