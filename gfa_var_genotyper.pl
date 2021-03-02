@@ -16,6 +16,7 @@ my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
 my $min_high_cov_allele_pct = 10;
 my $ploidy = 1;
+my $rm_inv_head = 0;
 my $use_model = 0;
 my $model_dir = 'gfa_var_genotyper_models';
 my $gs_path;
@@ -313,6 +314,10 @@ sub parse_gfa_var_file {
 			next();
 		}
 
+		if ($rm_inv_head == 1 && $pos =~ /^\-/) {
+			next();
+		}
+
 		my $type;
 
 		if ($ref =~ s/^complex\.//) {
@@ -384,6 +389,7 @@ sub parse_args {
 				'p|pack=s{,}' => \@pack_files,
 				'packlist=s' => \$pack_list_file,
 				'ploidy=i' => \$ploidy,
+				'rm_inv_head' => \$rm_inv_head,
 				'm|model' => \$use_model,
 				'modeldir=s' => \$model_dir,
 				'gs=s' => \$gs_path,
@@ -475,15 +481,20 @@ Brian Abernathy
 
 =head2 general options
 
- -v --var     gfa variants file (required)
+ -v --var       gfa variants file (required)
 
- -p --pack    vg pack table file(s)
+ -p --pack      vg pack table file(s)
 
- --packlist   text file containing list of pack file paths
-                1 file per line
+ --packlist     text file containing list of pack file paths
+                  1 file per line
 
- --ploidy     1 (haploid) or 2 (diploid) currently supported
-                default: 1
+ --ploidy       1 (haploid) or 2 (diploid) currently supported
+                  default: 1
+
+ --rm_inv_head  remove variants with inverted head node
+                  default: disabled
+                 
+Inversion variants can result in a negative sign suffix in the head node (POS) field.  Conventionally, this field represents the position in the reference genome and negative values may cause issues with tools that use vcfs.  To remove such variants from vcf ouput, use --rm_inv_head.  Note, the reciprocal variant of the inversion should be called regardless, so the variant information is still retained for most practical purposes.
 
 =head2 genotyping options
 

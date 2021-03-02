@@ -1,22 +1,29 @@
 # gfa_var_genotyper:
 
-Usage:
-
-    gfa_var_genotyper.pl [options]
-
 Options:
 
   general options:
 
-     -v --var     gfa variants file (required)
+     -v --var       gfa variants file (required)
 
-     -p --pack    vg pack table file(s)
+     -p --pack      vg pack table file(s)
 
-     --packlist   text file containing list of pack file paths
-                    1 file per line
+     --packlist     text file containing list of pack file paths
+                      1 file per line
 
-     --ploidy     1 (haploid) or 2 (diploid) currently supported
-                    default: 1
+     --ploidy       1 (haploid) or 2 (diploid) currently supported
+                      default: 1
+
+     --rm_inv_head  remove variants with inverted head node
+                      default: disabled
+
+    Inversion variants can result in a negative sign suffix in the head node
+    (POS) field. Conventionally, this field represents the position in the
+    reference genome and negative values may cause issues with tools that
+    use vcfs. To remove such variants from vcf ouput, use --rm_inv_head.
+    Note, the reciprocal variant of the inversion should be called
+    regardless, so the variant information is still retained for most
+    practical purposes.
 
   genotyping options:
 
@@ -41,6 +48,7 @@ Options:
                     default: gfa_var_genotyper_models
 
      --gs         path to GenomeScope executable
+                    default: autodetect in $PATH (if available)
 
    static parameters:
 
