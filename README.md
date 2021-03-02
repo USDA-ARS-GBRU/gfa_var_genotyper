@@ -1,4 +1,4 @@
-# gfa_var_genotyperUsage:
+# gfa_var_genotyper:
 
 Usage:
 
