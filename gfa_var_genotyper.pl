@@ -18,7 +18,7 @@ my $min_high_cov_allele_pct = 10;
 my $ploidy = 1;
 my $use_model = 0;
 my $model_dir = 'gfa_var_genotyper_models';
-my $gs_exec;
+my $gs_path;
 my $kmer_size = 31;
 my $help;
 
@@ -288,7 +288,7 @@ sub parse_pack_file {
 
 		my $gs_base = "$gs_dir/$file_base";
 
-		my $gs_cmd = "/home/bla/bin/genomescope2.0/genomescope.R -i $cov_histo_file -o $gs_dir -k $kmer_size -p $ploidy -n $file_base 1> $gs_base.gs.stdout 2> $gs_base.gs.stderr";
+		my $gs_cmd = "$gs_path -i $cov_histo_file -o $gs_dir -k $kmer_size -p $ploidy -n $file_base 1> $gs_base.gs.stdout 2> $gs_base.gs.stderr";
 
 		system($gs_cmd);
 	}
@@ -386,7 +386,7 @@ sub parse_args {
 				'ploidy=i' => \$ploidy,
 				'm|model' => \$use_model,
 				'modeldir=s' => \$model_dir,
-				'gs=s' => \$gs_exec,
+				'gs=s' => \$gs_path,
 				'min_tot_cov=i' =>\$min_tot_cov,
 				'max_low_cov_tot_cov=i' => \$max_low_cov_tot_cov,
 				'min_low_cov_allele_count=i' => \$min_low_cov_allele_count,
@@ -428,6 +428,24 @@ sub parse_args {
 			my $cmd = "mkdir -p $model_dir";
 
 			system($cmd);
+		}
+
+		if (defined($gs_path)) {
+			if (! -e $gs_path) {
+				error("vg path: $gs_path does not exist");
+			}
+		}
+
+		else {
+			$gs_path = qx(which vg);
+
+			chomp($gs_path);
+
+			if (! defined($gs_path) || $gs_path eq '') {
+				error("vg not found in \$PATH, specify using -v/--vg option");
+			}
+
+			print(STDERR "using vg found at $gs_path\n");
 		}
 	}
 
@@ -490,6 +508,7 @@ allele percentages.
                 default: gfa_var_genotyper_models
 
  --gs         path to GenomeScope executable
+                default: autodetect in $PATH (if available)
 
 =head3 static parameters
 
