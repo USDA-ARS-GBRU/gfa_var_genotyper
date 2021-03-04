@@ -6,10 +6,19 @@ Options:
 
      -v --var       gfa variants file (required)
 
-     -p --pack      vg pack table file(s)
+     -p --pack      vg pack table or segment coverage file(s)
+                      ex: -p sample.1.pack.table sample.2.pack.table
 
      --packlist     text file containing list of pack file paths
                       1 file per line
+
+    1 or more pack (table or segment coverage) files may be specified using
+    -p/--pack and/or --packlist. Pack table files are generated using the
+    `vg pack -d` command. Pack segment coverage files are generated using
+    pack_table_to_seg_cov.pl, which is part of the gfa_var_genotyper
+    project. (https://github.com/brianabernathy/gfa_var_genotyper) Pack
+    files may be uncompressed or compressed using either gzip or bzip2. (.gz
+    or .bz2 file extension)
 
      --ploidy       1 (haploid) or 2 (diploid) currently supported
                       default: 1
