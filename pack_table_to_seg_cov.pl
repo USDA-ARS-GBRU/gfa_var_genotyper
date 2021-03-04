@@ -45,7 +45,7 @@ sub parse_pack_table_file {
 
 	close(PACK);
 
-	foreach my $node_id (keys %seg_covs) {
+	foreach my $node_id (sort { $a <=> $b } keys %seg_covs) {
 		my $len = $seg_lens{$node_id};
 		my $cov = $seg_covs{$node_id};
 		my $avg_cov = int(($cov / $len) + 0.5);
