@@ -243,48 +243,78 @@ sub parse_pack_file {
 
 	push(@file_bases, $file_base);
 
+	my $file_type;
+
 	while (my $line = <$pack_fh>) {
 		chomp($line);
 
 		if ($line =~ /^seq\.pos/) {
+			$file_type = 'pos_cov';
+
 			next();
 		}
 
-		my ($seq_pos, $node_id, $node_offset, $cov) = split(/\t/, $line);
+		elsif ($line =~ /^node\.id/) {
+			$file_type = 'seg_cov';
 
-		if ($use_model == 1) {
-			if ($cov > 0) {
-				$cov_histo{$cov}++;
-			}
+			next();
 		}
 
-		if (exists($seg_lens{$node_id})) {
-			if (($node_offset + 1) > $seg_lens{$node_id}) {
+		if (! defined($file_type)) {
+			error("invalid record found in pack file: $pack_file\n\t$line");
+		}
+
+		if ($file_type eq 'pos_cov') {
+			my ($seq_pos, $node_id, $node_offset, $cov) = split(/\t/, $line);
+
+			if ($use_model == 1) {
+				if ($cov > 0) {
+					$cov_histo{$cov}++;
+				}
+			}
+
+			if (exists($seg_lens{$node_id})) {
+				if (($node_offset + 1) > $seg_lens{$node_id}) {
+					$seg_lens{$node_id} = $node_offset + 1;
+				}
+			}
+
+			else {
 				$seg_lens{$node_id} = $node_offset + 1;
 			}
+
+			$seg_covs{$node_id} += $cov;
 		}
 
-		else {
-			$seg_lens{$node_id} = $node_offset + 1;
-		}
+		elsif ($file_type eq 'seg_cov') {
+			my ($node_id, $len, $cov) = split(/\t/, $line);
 
-		$seg_covs{$node_id} += $cov;
+			if ($use_model == 1) {
+				if ($cov > 0) {
+					$cov_histo{$cov} += $len;
+				}
+			}
+
+			$pack_covs{$file_base}{$node_id} = $cov;
+		}
 	}
 
 	close($pack_fh);
 
-	foreach my $node_id (keys %seg_covs) {
-		if (! exists($gfa_segs{$node_id})) {
-			next();
+
+	if ($file_type eq 'pos_cov') {
+		foreach my $node_id (keys %seg_covs) {
+			if (! exists($gfa_segs{$node_id})) {
+				next();
+			}
+
+			my $len = $seg_lens{$node_id};
+			my $cov = $seg_covs{$node_id};
+			my $avg_cov = int(($cov / $len) + 0.5);
+
+			$pack_covs{$file_base}{$node_id} = $avg_cov;
 		}
-
-		my $len = $seg_lens{$node_id};
-		my $cov = $seg_covs{$node_id};
-		my $avg_cov = int(($cov / $len) + 0.5);
-
-		$pack_covs{$file_base}{$node_id} = $avg_cov;
 	}
-	
 
 
 	if ($use_model == 1) {
