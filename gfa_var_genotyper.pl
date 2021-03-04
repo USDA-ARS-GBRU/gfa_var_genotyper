@@ -222,7 +222,19 @@ sub parse_pack_file {
 	my %seg_covs = ();
 	my $file_base = $pack_file;
 
-	open(PACK, '<', $pack_file) or error("can't open pack file: $!");
+	my $pack_fh;
+
+	if ($pack_file =~ /\.gz$/) {
+		open($pack_fh, '-|', "gzip -dc $pack_file") or error("can't open pack file: $!");
+	}
+
+	elsif ($pack_file =~ /\.bz2$/) {
+		open($pack_fh, '-|', "bzip2 -dc $pack_file") or error("can't open pack file: $!");
+	}
+
+	else {
+		open($pack_fh, '<', $pack_file) or error("can't open pack file: $!");
+	}
 
 	print(STDERR "processing pack file: $pack_file\n");
 
@@ -231,7 +243,7 @@ sub parse_pack_file {
 
 	push(@file_bases, $file_base);
 
-	while (my $line = <PACK>) {
+	while (my $line = <$pack_fh>) {
 		chomp($line);
 
 		if ($line =~ /^seq\.pos/) {
@@ -259,7 +271,7 @@ sub parse_pack_file {
 		$seg_covs{$node_id} += $cov;
 	}
 
-	close(PACK);
+	close($pack_fh);
 
 	foreach my $node_id (keys %seg_covs) {
 		if (! exists($gfa_segs{$node_id})) {
@@ -495,10 +507,13 @@ Brian Abernathy
 
  -v --var       gfa variants file (required)
 
- -p --pack      vg pack table file(s)
+ -p --pack      vg pack table or segment coverage file(s)
+                  ex: -p sample.1.pack.table sample.2.pack.table
 
  --packlist     text file containing list of pack file paths
                   1 file per line
+
+1 or more pack (table or segment coverage) files may be specified using -p/--pack and/or --packlist. Pack table files are generated using the `vg pack -d` command. Pack segment coverage files are generated using pack_table_to_seg_cov.pl, which is part of the gfa_var_genotyper project. (https://github.com/brianabernathy/gfa_var_genotyper) Pack files may be uncompressed or compressed using either gzip or bzip2. (.gz or .bz2 file extension)
 
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
