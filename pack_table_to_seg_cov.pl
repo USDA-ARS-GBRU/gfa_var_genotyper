@@ -45,7 +45,7 @@ sub parse_pack_table_file {
 
 	close(PACK);
 
-	print("node_id\tlength\tcoverage\n");
+	print("node.id\tlength\tcoverage\n");
 
 	foreach my $node_id (sort { $a <=> $b } keys %seg_covs) {
 		my $len = $seg_lens{$node_id};
