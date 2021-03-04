@@ -295,6 +295,10 @@ sub parse_pack_file {
 				}
 			}
 
+			if (! exists($gfa_segs{$node_id})) {
+				next();
+			}
+
 			$pack_covs{$file_base}{$node_id} = $cov;
 		}
 	}
