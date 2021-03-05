@@ -36,6 +36,11 @@ Options:
 
   genotyping options:
 
+    *Currently dynamic, model-based thresholds have not been fully
+    implemented. At the moment, selecting -m/--model will result in coverage
+    histograms and genomescope plots being generated, but all calls will
+    still be based on the static parameters.*
+
     Genotyping thresholds can be set manually or dynamically by creating
     coverage count histograms that are provide to GenomeScope for modeling.
     (modeling is not recommended for GBS data) When modeling is enabled, any
