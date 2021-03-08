@@ -496,20 +496,20 @@ sub parse_args {
 
 		if (defined($gs_path)) {
 			if (! -e $gs_path) {
-				error("vg path: $gs_path does not exist");
+				error("genomescope path: $gs_path does not exist");
 			}
 		}
 
 		else {
-			$gs_path = qx(which vg);
+			$gs_path = qx(which genomescope.R);
 
 			chomp($gs_path);
 
 			if (! defined($gs_path) || $gs_path eq '') {
-				error("vg not found in \$PATH, specify using -v/--vg option");
+				error("genomescope not found in \$PATH, specify using --gs option");
 			}
 
-			print(STDERR "using vg found at $gs_path\n");
+			print(STDERR "using genomescope found at $gs_path\n");
 		}
 	}
 
@@ -547,7 +547,14 @@ Brian Abernathy
  --packlist     text file containing list of pack file paths
                   1 file per line
 
-1 or more pack (table or segment coverage) files may be specified using -p/--pack and/or --packlist. Pack table files are generated using the `vg pack -d` command. Pack segment coverage files are generated using pack_table_to_seg_cov.pl, which is part of the gfa_var_genotyper project. (https://github.com/brianabernathy/gfa_var_genotyper) Pack files may be uncompressed or compressed using either gzip or bzip2. (.gz or .bz2 file extension)
+1 or more pack (table or segment coverage) files may be specified
+using -p/--pack and/or --packlist. Pack table files are generated
+using the `vg pack -d` command. Pack segment coverage files are
+generated using pack_table_to_seg_cov.pl, which is part of the
+gfa_var_genotyper project. 
+(https://github.com/brianabernathy/gfa_var_genotyper) Pack files
+may be uncompressed or compressed using either gzip or bzip2.
+(.gz or .bz2 file extension)
 
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
@@ -555,15 +562,26 @@ Brian Abernathy
  --rm_inv_head  remove variants with inverted head node
                   default: disabled
                  
-Inversion variants can result in a negative sign suffix in the head node (POS) field.  Conventionally, this field represents the position in the reference genome and negative values may cause issues with tools that use vcfs.  To remove such variants from vcf ouput, use --rm_inv_head.  Note, the reciprocal variant of the inversion should be called regardless, so the variant information is still retained for most practical purposes.
+Inversion variants can result in a negative sign suffix in the head
+node (POS) field.  Conventionally, this field represents the position
+in the reference genome and negative values may cause issues with tools
+that use vcfs.  To remove such variants from vcf ouput, use
+--rm_inv_head.  Note, the reciprocal variant of the inversion should
+be called regardless, so the variant information is still retained for
+most practical purposes.
 
 =head2 genotyping options
+
+*Currently dynamic, model-based thresholds have not been fully
+implemented. At the moment, selecting -m/--model will result in
+coverage histograms and genomescope plots being generated, but
+all calls will still be based on the static parameters.*
 
 Genotyping thresholds can be set manually or dynamically by creating
 coverage count histograms that are provide to GenomeScope for modeling.
 (modeling is not recommended for GBS data) When modeling is enabled,
 any samples that fail to generate a valid model will fallback to
-using the static parameters.
+using the static parameters. 
 
 Static parameter genotyping sets a minimum total coverage (all alleles)
 threshold. The remaining variants are processed as either low or high
