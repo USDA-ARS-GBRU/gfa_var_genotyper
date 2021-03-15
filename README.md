@@ -2,6 +2,10 @@
 
 ### gfa_var_genotyper.pl
 
+Usage:
+
+    gfa_var_genotyper.pl [options] > genotypes
+
 Options:
 
   general options:
