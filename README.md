@@ -95,6 +95,6 @@ Usage:
 
 Options:
 
-     -p --pack      vg pack table file
+     -p --pack    vg pack table file
 
      -h --help    display help menu
