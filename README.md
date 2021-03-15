@@ -1,4 +1,6 @@
-# gfa_var_genotyper.pl
+# gfa_var_genotyper
+
+### gfa_var_genotyper.pl
 
 Options:
 
@@ -83,7 +85,7 @@ Options:
      -h --help    display help menu
 
 
-# pack_table_to_seg_cov.pl
+### pack_table_to_seg_cov.pl
 
 Usage:
 
