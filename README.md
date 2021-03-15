@@ -1,4 +1,4 @@
-# gfa_var_genotyper:
+# gfa_var_genotyper.pl
 
 Options:
 
@@ -79,5 +79,20 @@ Options:
                                    default: 10
 
   help:
+
+     -h --help    display help menu
+
+
+# pack_table_to_seg_cov.pl
+
+Usage:
+
+    pack_table_to_seg_cov.pl [options] > pack.seg.cov
+
+    pack_table_to_seg_cov.pl [options] | gzip > pack.seg.cov.gz
+
+Options:
+
+     -p --pack      vg pack table file
 
      -h --help    display help menu

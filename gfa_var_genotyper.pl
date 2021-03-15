@@ -525,7 +525,7 @@ gfa_var_genotyper.pl
 
 =head1 SYNOPSIS
 
-gfa_var_genotyper.pl [options]
+gfa_var_genotyper.pl [options] > genotypes
 
 =head1 DESCRIPTION
 

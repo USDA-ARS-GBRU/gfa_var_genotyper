@@ -113,7 +113,8 @@ pack_table_to_seg_cov.pl
 
 =head1 SYNOPSIS
 
-pack_table_to_seg_cov.pl [options]
+pack_table_to_seg_cov.pl [options] > pack.seg.cov
+pack_table_to_seg_cov.pl [options] | gzip > pack.seg.cov.gz
 
 =head1 DESCRIPTION
 
