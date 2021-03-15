@@ -37,18 +37,25 @@ sub parse_pack_table_file {
 			if ($seg_len > 0) {
 				my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
 
-				print("$node_id\t$seg_len\t$avg_cov\n");
-
-				$seg_len = 0;
-				$seg_cov = 0;
+				print("$prev_node_id\t$seg_len\t$avg_cov\n");
 			}
+
+			$seg_len = 0;
+			$seg_cov = 0;
 		}
 
 		$seg_cov += $cov;
 		$seg_len++;
+		$prev_node_id = $node_id;
 	}
 
 	close(PACK);
+
+	if (defined($prev_node_id) && $seg_len > 0) {
+		my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
+
+		print("$prev_node_id\t$seg_len\t$avg_cov\n");
+	}
 
 	return(0);
 }
