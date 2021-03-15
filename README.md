@@ -102,4 +102,8 @@ Options:
 
      -p --pack    vg pack table file
 
+     -s --sort    sort by node (increases memory consumption and output file
+                  compressibility)
+                    default: disabled
+
      -h --help    display help menu

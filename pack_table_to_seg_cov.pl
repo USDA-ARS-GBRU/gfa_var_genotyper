@@ -7,7 +7,10 @@ use strict;
 use warnings;
 
 my $pack_table_file;
+my $enable_sort = 0;
 my $help;
+
+my %nodes = ();
 
 parse_args();
 parse_pack_table_file();
@@ -37,7 +40,13 @@ sub parse_pack_table_file {
 			if ($seg_len > 0) {
 				my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
 
-				print("$prev_node_id\t$seg_len\t$avg_cov\n");
+				if ($enable_sort == 1) {
+					$nodes{$prev_node_id} = "$seg_len\t$avg_cov";
+				}
+
+				else {
+					print("$prev_node_id\t$seg_len\t$avg_cov\n");
+				}
 			}
 
 			$seg_len = 0;
@@ -54,7 +63,20 @@ sub parse_pack_table_file {
 	if (defined($prev_node_id) && $seg_len > 0) {
 		my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
 
-		print("$prev_node_id\t$seg_len\t$avg_cov\n");
+		if ($enable_sort == 1) {
+			$nodes{$prev_node_id} = "$seg_len\t$avg_cov";
+		}
+
+		else {
+			print("$prev_node_id\t$seg_len\t$avg_cov\n");
+		}
+	}
+
+
+	if ($enable_sort == 1) {
+		foreach my $node_id (sort { $a <=> $b } keys %nodes) {
+			print("$node_id\t$nodes{$node_id}\n");
+		}
 	}
 
 	return(0);
@@ -91,6 +113,7 @@ sub parse_args {
 	}
 
 	GetOptions ('p|pack=s' => \$pack_table_file,
+				's|sort' => \$enable_sort,
 				'h|help' => \$help) or error('cannot parse arguments');
 
 	if (defined($help)) {
@@ -126,7 +149,11 @@ Brian Abernathy
 
 =head1 OPTIONS
 
- -p --pack    vg pack table file
+ -p --pack    vg pack table file (required)
+
+ -s --sort    sort by node (increases memory consumption and output file
+              compressibility)
+                default: disabled
 
  -h --help    display help menu
 
