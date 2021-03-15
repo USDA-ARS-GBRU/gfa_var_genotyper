@@ -84,6 +84,7 @@ Options:
 
      -h --help    display help menu
 
+---
 
 ### pack_table_to_seg_cov.pl
 
