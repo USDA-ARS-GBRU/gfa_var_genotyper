@@ -16,10 +16,13 @@ exit(0);
 
 
 sub parse_pack_table_file {
-	my %seg_lens = ();
-	my %seg_covs = ();
+	my $prev_node_id;
+	my $seg_len = 0;
+	my $seg_cov = 0;
 
 	open(PACK, '<', $pack_table_file) or error("can't open pack table file: $!");
+
+	print("node.id\tlength\tcoverage\n");
 
 	while (my $line = <PACK>) {
 		chomp($line);
@@ -30,31 +33,23 @@ sub parse_pack_table_file {
 
 		my ($seq_pos, $node_id, $node_offset, $cov) = split(/\t/, $line);
 
-		if (exists($seg_lens{$node_id})) {
-			if (($node_offset + 1) > $seg_lens{$node_id}) {
-				$seg_lens{$node_id} = $node_offset + 1;
+		if (defined($prev_node_id) && $node_id ne $prev_node_id) {
+			if ($seg_len > 0) {
+				my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
+
+				print("$node_id\t$seg_len\t$avg_cov\n");
+
+				$seg_len = 0;
+				$seg_cov = 0;
 			}
 		}
 
-		else {
-			$seg_lens{$node_id} = $node_offset + 1;
-		}
-
-		$seg_covs{$node_id} += $cov;
+		$seg_cov += $cov;
+		$seg_len++;
 	}
 
 	close(PACK);
 
-	print("node.id\tlength\tcoverage\n");
-
-	foreach my $node_id (sort { $a <=> $b } keys %seg_covs) {
-		my $len = $seg_lens{$node_id};
-		my $cov = $seg_covs{$node_id};
-		my $avg_cov = int(($cov / $len) + 0.5);
-
-		print("$node_id\t$len\t$avg_cov\n");
-	}
-	
 	return(0);
 }
 
