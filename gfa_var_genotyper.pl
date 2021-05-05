@@ -218,8 +218,6 @@ sub parse_pack_file {
 	my $pack_file = shift();
 
 	my %cov_histo = ();
-	my %seg_lens = ();
-	my %seg_covs = ();
 	my $file_base = $pack_file;
 
 	my $pack_fh;
@@ -273,25 +271,24 @@ sub parse_pack_file {
 				}
 			}
 
-			if (exists($seg_lens{$node_id})) {
-				if (($node_offset + 1) > $seg_lens{$node_id}) {
-					$seg_lens{$node_id} = $node_offset + 1;
+			if ($node_offset == 0) {
+				if (! exists($gfa_segs{$node_id})) {
+					next();
 				}
-			}
 
-			else {
-				$seg_lens{$node_id} = $node_offset + 1;
+				$pack_covs{$file_base}{$node_id} = $cov;
 			}
-
-			$seg_covs{$node_id} += $cov;
 		}
 
 		elsif ($file_type eq 'seg_cov') {
-			my ($node_id, $len, $cov) = split(/\t/, $line);
+			my ($node_id, $covs) = split(/\t/, $line);
+			my @covs = split(',', $covs);
 
 			if ($use_model == 1) {
-				if ($cov > 0) {
-					$cov_histo{$cov} += $len;
+				foreach my $cov (@covs) {
+					if ($cov > 0) {
+						$cov_histo{$cov}++;
+					}
 				}
 			}
 
@@ -299,26 +296,11 @@ sub parse_pack_file {
 				next();
 			}
 
-			$pack_covs{$file_base}{$node_id} = $cov;
+			$pack_covs{$file_base}{$node_id} = $covs[0];
 		}
 	}
 
 	close($pack_fh);
-
-
-	if ($file_type eq 'pos_cov') {
-		foreach my $node_id (keys %seg_covs) {
-			if (! exists($gfa_segs{$node_id})) {
-				next();
-			}
-
-			my $len = $seg_lens{$node_id};
-			my $cov = $seg_covs{$node_id};
-			my $avg_cov = int(($cov / $len) + 0.5);
-
-			$pack_covs{$file_base}{$node_id} = $avg_cov;
-		}
-	}
 
 
 	if ($use_model == 1) {
