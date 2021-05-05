@@ -20,12 +20,11 @@ exit(0);
 
 sub parse_pack_table_file {
 	my $prev_node_id;
-	my $seg_len = 0;
-	my $seg_cov = 0;
+	my @covs = ();
 
 	open(PACK, '<', $pack_table_file) or error("can't open pack table file: $!");
 
-	print("node.id\tlength\tcoverage\n");
+	print("node.id\tpos.covs\n");
 
 	while (my $line = <PACK>) {
 		chomp($line);
@@ -37,38 +36,30 @@ sub parse_pack_table_file {
 		my ($seq_pos, $node_id, $node_offset, $cov) = split(/\t/, $line);
 
 		if (defined($prev_node_id) && $node_id ne $prev_node_id) {
-			if ($seg_len > 0) {
-				my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
-
-				if ($enable_sort == 1) {
-					$nodes{$prev_node_id} = "$seg_len\t$avg_cov";
-				}
-
-				else {
-					print("$prev_node_id\t$seg_len\t$avg_cov\n");
-				}
+			if ($enable_sort == 1) {
+				$nodes{$prev_node_id} = join(',', @covs);
 			}
 
-			$seg_len = 0;
-			$seg_cov = 0;
+			else {
+				print("$prev_node_id\t", join(',', @covs), "\n");
+			}
+
+			@covs = ();
 		}
 
-		$seg_cov += $cov;
-		$seg_len++;
 		$prev_node_id = $node_id;
+		push(@covs, $cov);
 	}
 
 	close(PACK);
 
-	if (defined($prev_node_id) && $seg_len > 0) {
-		my $avg_cov = int(($seg_cov / $seg_len) + 0.5);
-
+	if (defined($prev_node_id) && $#covs >= 0) {
 		if ($enable_sort == 1) {
-			$nodes{$prev_node_id} = "$seg_len\t$avg_cov";
+			$nodes{$prev_node_id} = join(',', @covs);
 		}
 
 		else {
-			print("$prev_node_id\t$seg_len\t$avg_cov\n");
+			print("$prev_node_id\t", join(',', @covs), "\n");
 		}
 	}
 
@@ -141,7 +132,7 @@ pack_table_to_seg_cov.pl [options] | gzip > pack.seg.cov.gz
 
 =head1 DESCRIPTION
 
-pack_table_to_seg_cov.pl converts vg pack tables to segment (avg) coverage files
+pack_table_to_seg_cov.pl converts vg pack tables to compact segment cov files
 
 =head1 AUTHOR
 
