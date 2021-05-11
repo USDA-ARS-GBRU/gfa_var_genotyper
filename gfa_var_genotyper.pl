@@ -47,13 +47,19 @@ sub print_gfa_var_gts {
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
 
+		if ($line =~ /^##/) {
+			print(STDOUT "$line\n");
+
+			next();
+		}
+
 		my ($chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts) = split(/\t/, $line);
 
 		if (! defined($id)) {
 			next();
 		}
 
-		if ($chr eq 'CHROM') {
+		if ($chr eq '#CHROM') {
 			print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts, @file_bases), "\n");
 
 			next();
@@ -344,13 +350,13 @@ sub parse_gfa_var_file {
 	while (my $line = <GFA_VARS>) {
 		chomp($line);
 
-		my ($chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts) = split(/\t/, $line);
-
-		if (! defined($id)) {
+		if ($line =~ /^#/) {
 			next();
 		}
 
-		if ($chr eq 'CHROM') {
+		my ($chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts) = split(/\t/, $line);
+
+		if (! defined($id)) {
 			next();
 		}
 
