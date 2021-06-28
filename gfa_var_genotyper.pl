@@ -15,6 +15,7 @@ my $min_tot_cov = 3;
 my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
 my $min_high_cov_allele_pct = 10;
+my $avg_var_cov;
 my $ploidy = 1;
 my $rm_inv_head = 0;
 my $use_model = 0;
@@ -248,6 +249,7 @@ sub parse_pack_file {
 	push(@file_bases, $file_base);
 
 	my $file_type;
+	my %pack_sums_counts = ();
 
 	while (my $line = <$pack_fh>) {
 		chomp($line);
@@ -277,12 +279,19 @@ sub parse_pack_file {
 				}
 			}
 
-			if ($node_offset == 0) {
-				if (! exists($gfa_segs{$node_id})) {
-					next();
-				}
+			if (! exists($gfa_segs{$node_id})) {
+				next();
+			}
 
-				$pack_covs{$file_base}{$node_id} = $cov;
+			if (defined($avg_var_cov)) {
+				$pack_sums_counts{$file_base}{$node_id}{'sum'} += $cov;
+				$pack_sums_counts{$file_base}{$node_id}{'count'}++;
+			}
+
+			else {
+				if ($node_offset == 0) {
+					$pack_covs{$file_base}{$node_id} = $cov;
+				}
 			}
 		}
 
@@ -302,11 +311,43 @@ sub parse_pack_file {
 				next();
 			}
 
-			$pack_covs{$file_base}{$node_id} = $covs[0];
+			if (defined($avg_var_cov)) {
+				my $sum = 0;
+				my $avg = 0;
+
+				foreach my $cov (@covs) {
+					$sum += $cov
+				}
+
+				if ($#covs >= 0) {
+					$avg = int(($sum / ($#covs + 1)) + 0.5);
+				}
+
+				$pack_covs{$file_base}{$node_id} = $avg;
+			}
+
+			else {
+				$pack_covs{$file_base}{$node_id} = $covs[0];
+			}
 		}
 	}
 
 	close($pack_fh);
+
+
+	if ($file_type eq 'pos_cov' && defined($avg_var_cov)) {
+		foreach my $file_base (keys %pack_sums_counts) {
+			foreach my $node_id (keys %{$pack_sums_counts{$file_base}}) {
+				my $sum = $pack_sums_counts{$file_base}{$node_id}{'sum'};
+				my $count = $pack_sums_counts{$file_base}{$node_id}{'count'};
+				my $avg = int(($sum / $count) + 0.5);
+
+				$pack_covs{$file_base}{$node_id} = $avg;
+			}
+		}
+
+		undef %pack_sums_counts;
+	}
 
 
 	if ($use_model == 1) {
@@ -434,6 +475,7 @@ sub parse_args {
 	GetOptions ('v|var=s' => \$gfa_var_file,
 				'p|pack=s{,}' => \@pack_files,
 				'packlist=s' => \$pack_list_file,
+				'avg_var_cov' => \$avg_var_cov,
 				'ploidy=i' => \$ploidy,
 				'rm_inv_head' => \$rm_inv_head,
 				'm|model' => \$use_model,
@@ -532,8 +574,8 @@ Brian Abernathy
  -p --pack      vg pack table or segment coverage file(s)
                   ex: -p sample.1.pack.table sample.2.pack.table
 
- --packlist     text file containing list of pack file paths
-                  1 file per line
+ --packlist     text file containing list of pack or segment coverage
+                  file paths (1 file per line)
 
 1 or more pack (table or segment coverage) files may be specified
 using -p/--pack and/or --packlist. Pack table files are generated
@@ -543,6 +585,11 @@ gfa_var_genotyper project.
 (https://github.com/brianabernathy/gfa_var_genotyper) Pack files
 may be uncompressed or compressed using either gzip or bzip2.
 (.gz or .bz2 file extension)
+
+ --avg_var_cov  use average coverage of entire variant node when
+                calculating variant allele coverage
+                  default: use coverage from only first variant
+                    node position (adjacent to head node)
 
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
