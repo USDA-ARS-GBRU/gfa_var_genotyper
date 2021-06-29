@@ -148,7 +148,7 @@ sub print_gfa_var_gts {
 				# skip: low cov
 			}
 
-			if (defined($max_tot_cov) && $tot_cov > $max_tot_cov) {
+			elsif (defined($max_tot_cov) && $tot_cov > $max_tot_cov) {
 				# skip: high cov
 			}
 
