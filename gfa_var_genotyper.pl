@@ -11,11 +11,13 @@ my @pack_files = ();
 my $pack_list_file;
 my %seg_lens = ();
 my %gfa_segs = ();
+my $use_low_cov;
 my $min_tot_cov = 3;
+my $max_tot_cov;
 my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
 my $min_high_cov_allele_pct = 10;
-my $avg_var_cov;
+my $use_avg_var_cov;
 my $ploidy = 1;
 my $rm_inv_head = 0;
 my $use_model = 0;
@@ -146,6 +148,10 @@ sub print_gfa_var_gts {
 				# skip: low cov
 			}
 
+			if (defined($max_tot_cov) && $tot_cov > $max_tot_cov) {
+				# skip: high cov
+			}
+
 			else {
 				my $ref_cov = 0;
 				my $ref_cov_pct = 0;
@@ -162,7 +168,18 @@ sub print_gfa_var_gts {
 					$alt_cov_pct = $alt_cov / $tot_cov * 100;
 				}
 
-				if ($tot_cov <= $max_low_cov_tot_cov) {
+
+				if (defined($use_low_cov)) {
+					if ($ref_cov > $alt_cov) {
+						$gt_rec = "$ref_gt";
+					}
+
+					elsif ($alt_cov > $ref_cov) {
+						$gt_rec = "$alt_gt";
+					}
+				}
+
+				elsif ($tot_cov <= $max_low_cov_tot_cov) {
 					if ($ref_cov >= $min_low_cov_allele_count && $alt_cov >= $min_low_cov_allele_count) {
 						if ($ploidy >= 2) {
 							$gt_rec = "$ref_gt/$alt_gt";
@@ -283,7 +300,7 @@ sub parse_pack_file {
 				next();
 			}
 
-			if (defined($avg_var_cov)) {
+			if (defined($use_avg_var_cov)) {
 				$pack_sums_counts{$file_base}{$node_id}{'sum'} += $cov;
 				$pack_sums_counts{$file_base}{$node_id}{'count'}++;
 			}
@@ -311,7 +328,7 @@ sub parse_pack_file {
 				next();
 			}
 
-			if (defined($avg_var_cov)) {
+			if (defined($use_avg_var_cov)) {
 				my $sum = 0;
 				my $avg = 0;
 
@@ -335,7 +352,7 @@ sub parse_pack_file {
 	close($pack_fh);
 
 
-	if ($file_type eq 'pos_cov' && defined($avg_var_cov)) {
+	if ($file_type eq 'pos_cov' && defined($use_avg_var_cov)) {
 		foreach my $file_base (keys %pack_sums_counts) {
 			foreach my $node_id (keys %{$pack_sums_counts{$file_base}}) {
 				my $sum = $pack_sums_counts{$file_base}{$node_id}{'sum'};
@@ -475,13 +492,15 @@ sub parse_args {
 	GetOptions ('v|var=s' => \$gfa_var_file,
 				'p|pack=s{,}' => \@pack_files,
 				'packlist=s' => \$pack_list_file,
-				'avg_var_cov' => \$avg_var_cov,
+				'avg_var_cov' => \$use_avg_var_cov,
 				'ploidy=i' => \$ploidy,
 				'rm_inv_head' => \$rm_inv_head,
 				'm|model' => \$use_model,
 				'modeldir=s' => \$model_dir,
 				'gs=s' => \$gs_path,
-				'min_tot_cov=i' =>\$min_tot_cov,
+				'low_cov' => \$use_low_cov,
+				'min_tot_cov=i' => \$min_tot_cov,
+				'max_tot_cov=i' => \$max_tot_cov,
 				'max_low_cov_tot_cov=i' => \$max_low_cov_tot_cov,
 				'min_low_cov_allele_count=i' => \$min_low_cov_allele_count,
 				'min_high_cov_allele_pct=i' => \$min_high_cov_allele_pct,
@@ -513,6 +532,10 @@ sub parse_args {
 
 	if ($ploidy != 1 && $ploidy != 2) {
 		arg_error('ploidy must be either 1 or 2');
+	}
+
+	if (defined($use_low_cov) && $ploidy > 1) {
+		arg_error('ploidy must be 1 when --lowcov is used');
 	}
 
 	if ($use_model == 1) {
@@ -637,8 +660,15 @@ allele percentages.
 
 =head3 static parameters
 
+ --low_cov                   call GT based solely on allele with highest
+                               coverage (--min_tot_cov still applies)
+                               default: disabled
+
  --min_tot_cov               minimum total coverage (all alleles)
                                default: 3
+
+ --max_tot_cov               maximum total coverage (all alleles)
+                               default: no maxiumum
 
  --max_low_cov_tot_cov       maximum "low coverage" total coverage
                                default: 9
