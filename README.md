@@ -15,8 +15,8 @@ Options:
      -p --pack      vg pack table or segment coverage file(s)
                       ex: -p sample.1.pack.table sample.2.pack.table
 
-     --packlist     text file containing list of pack file paths
-                      1 file per line
+     --packlist     text file containing list of pack or segment coverage
+                      file paths (1 file per line)
 
     1 or more pack (table or segment coverage) files may be specified using
     -p/--pack and/or --packlist. Pack table files are generated using the
@@ -25,6 +25,11 @@ Options:
     project. (https://github.com/brianabernathy/gfa_var_genotyper) Pack
     files may be uncompressed or compressed using either gzip or bzip2. (.gz
     or .bz2 file extension)
+
+     --avg_var_cov  use average coverage of entire variant node when
+                    calculating variant allele coverage
+                      default: use coverage from only first variant
+                        node position (adjacent to head node)
 
      --ploidy       1 (haploid) or 2 (diploid) currently supported
                       default: 1
@@ -72,8 +77,15 @@ Options:
 
    static parameters:
 
+     --low_cov                   call GT based solely on allele with highest
+                                   coverage (--min_tot_cov still applies)
+                                   default: disabled
+
      --min_tot_cov               minimum total coverage (all alleles)
                                    default: 3
+
+     --max_tot_cov               maximum total coverage (all alleles)
+                                   default: no maxiumum
 
      --max_low_cov_tot_cov       maximum "low coverage" total coverage
                                    default: 9
