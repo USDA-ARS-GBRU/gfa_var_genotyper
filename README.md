@@ -26,10 +26,10 @@ Options:
     files may be uncompressed or compressed using either gzip or bzip2. (.gz
     or .bz2 file extension)
 
-     --avg_var_cov  use average coverage of entire variant node when
-                    calculating variant allele coverage
-                      default: use coverage from only first variant
-                        node position (adjacent to head node)
+     --edge_cov     use coverage from only first variant node position
+                    (adjacent to head node) when calculating allele
+                    depth (AD) values
+                      default: use average coverage of first variant node
 
      --ploidy       1 (haploid) or 2 (diploid) currently supported
                       default: 1

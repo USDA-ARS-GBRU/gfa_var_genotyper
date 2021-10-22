@@ -17,7 +17,8 @@ my $max_tot_cov;
 my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
 my $min_high_cov_allele_pct = 10;
-my $use_avg_var_cov;
+my $use_edge_cov = 0;
+my $use_avg_var_cov = 1;
 my $ploidy = 1;
 my $rm_inv_head = 0;
 my $use_model = 0;
@@ -492,7 +493,7 @@ sub parse_args {
 	GetOptions ('v|var=s' => \$gfa_var_file,
 				'p|pack=s{,}' => \@pack_files,
 				'packlist=s' => \$pack_list_file,
-				'avg_var_cov' => \$use_avg_var_cov,
+				'edge_cov' => \$use_edge_cov,
 				'ploidy=i' => \$ploidy,
 				'rm_inv_head' => \$rm_inv_head,
 				'm|model' => \$use_model,
@@ -528,6 +529,10 @@ sub parse_args {
 
 	if (! @pack_files) {
 		arg_error('at least 1 pack table file required');
+	}
+
+	if ($use_edge_cov == 1) {
+		$use_avg_var_cov = 0;
 	}
 
 	if ($ploidy != 1 && $ploidy != 2) {
@@ -609,10 +614,10 @@ gfa_var_genotyper project.
 may be uncompressed or compressed using either gzip or bzip2.
 (.gz or .bz2 file extension)
 
- --avg_var_cov  use average coverage of entire variant node when
-                calculating variant allele coverage
-                  default: use coverage from only first variant
-                    node position (adjacent to head node)
+ --edge_cov     use coverage from only first variant node position
+                (adjacent to head node) when calculating allele
+                depth (AD) values
+                  default: use average coverage of first variant node
 
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
