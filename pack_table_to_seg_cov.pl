@@ -21,12 +21,23 @@ exit(0);
 sub parse_pack_table_file {
 	my $prev_node_id;
 	my @covs = ();
+	my $fh;
 
-	open(PACK, '<', $pack_table_file) or error("can't open pack table file: $!");
+	if ($pack_table_file =~ /\.gz$/) {
+ 		open($fh, '-|', "gzip -dc $pack_table_file") or error("can't read $pack_table_file: $!");
+	}
+
+	elsif ($pack_table_file =~ /\.bz2$/) {
+		open($fh, '-|', "bzip2 -dc $pack_table_file") or error("can't read $pack_table_file: $!");
+	}
+
+	else {
+		open($fh, '<', $pack_table_file) or error("can't open pack table file: $!");
+	}
 
 	print("node.id\tpos.covs\n");
 
-	while (my $line = <PACK>) {
+	while (my $line = <$fh>) {
 		chomp($line);
 
 		if ($line =~ /^seq\.pos/) {
@@ -51,7 +62,7 @@ sub parse_pack_table_file {
 		push(@covs, $cov);
 	}
 
-	close(PACK);
+	close($fh);
 
 	if (defined($prev_node_id) && $#covs >= 0) {
 		if ($enable_sort == 1) {
@@ -140,7 +151,7 @@ Brian Abernathy
 
 =head1 OPTIONS
 
- -p --pack    vg pack table file (required)
+ -p --pack    vg pack table file, can be gz or bz2 compressed (required)
 
  -s --sort    sort by node (increases memory consumption and output file
               compressibility)
