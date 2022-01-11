@@ -12,24 +12,17 @@ Options:
 
      -v --var       gfa variants file (required)
 
-     -p --pack      vg pack table or segment coverage file(s)
-                      ex: -p sample.1.pack.table sample.2.pack.table
+     -p --pack      vg pack edge table(s)
+                      ex: -p sample.1.pack.edge.table sample.2.pack.edge.table.gz
 
-     --packlist     text file containing list of pack or segment coverage
-                      file paths (1 file per line)
+     --packlist     text file containing list of pack edge tables
+                      (1 file per line)
 
-    1 or more pack (table or segment coverage) files may be specified using
-    -p/--pack and/or --packlist. Pack table files are generated using the
-    `vg pack -d` command. Pack segment coverage files are generated using
-    pack_table_to_seg_cov.pl, which is part of the gfa_var_genotyper
-    project. (https://github.com/brianabernathy/gfa_var_genotyper) Pack
-    files may be uncompressed or compressed using either gzip or bzip2. (.gz
-    or .bz2 file extension)
-
-     --edge_cov     use coverage from only first variant node position
-                    (adjacent to head node) when calculating allele
-                    depth (AD) values
-                      default: use average coverage of first variant node
+    1 or more vg (https://github.com/vgteam/vg) pack edge tables may be
+    specified using -p/--pack and/or --packlist. Pack edge tables are
+    generated using the `vg pack -D` command. Pack edge tables may be
+    uncompressed or compressed using either gzip or bzip2. (.gz or .bz2 file
+    extension)
 
      --ploidy       1 (haploid) or 2 (diploid) currently supported
                       default: 1
@@ -97,25 +90,5 @@ Options:
                                    default: 10
 
   help:
-
-     -h --help    display help menu
-
----
-
-### pack_table_to_seg_cov.pl
-
-Usage:
-
-    pack_table_to_seg_cov.pl [options] > pack.seg.cov
-
-    pack_table_to_seg_cov.pl [options] | gzip > pack.seg.cov.gz
-
-Options:
-
-     -p --pack    vg pack table file
-
-     -s --sort    sort by node (increases memory consumption and output file
-                  compressibility)
-                    default: disabled
 
      -h --help    display help menu
