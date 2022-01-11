@@ -9,16 +9,14 @@ use warnings;
 my $gfa_var_file;
 my @pack_files = ();
 my $pack_list_file;
-my %seg_lens = ();
-my %gfa_segs = ();
+my %node_lens = ();
+my %gfa_nodes = ();
 my $use_low_cov;
 my $min_tot_cov = 3;
 my $max_tot_cov;
 my $max_low_cov_tot_cov = 9;
 my $min_low_cov_allele_count = 3;
 my $min_high_cov_allele_pct = 10;
-my $use_edge_cov = 0;
-my $use_avg_var_cov = 1;
 my $ploidy = 1;
 my $rm_inv_head = 0;
 my $use_model = 0;
@@ -27,8 +25,8 @@ my $gs_path;
 my $kmer_size = 31;
 my $help;
 
-my %rec_seg_gts = ();
-my %rec_gt_segs = ();
+my %rec_node_gts = ();
+my %rec_gt_nodes = ();
 my %rec_id_allele_counts = ();
 my %pack_covs = ();
 my @file_bases = ();
@@ -69,26 +67,39 @@ sub print_gfa_var_gts {
 			next();
 		}
 
-		my $rec_id = "$chr\t$pos\t$id";
-		my $allele_count = $rec_id_allele_counts{$rec_id};
+		if ($pos =~ /\-$/) {
+			if ($rm_inv_head == 1) {
+				next();
+			}
 
-		if ($pos =~ /^\-/) {
-			my $warning = 'warning: negative head node suffix found, see --rm_inv_head option for more information';
+			$pos =~ s/\-$//;
+
+			my $warning = 'inverted head node found, see --rm_inv_head option for more information';
+			my $info_str = 'inverted_head_node';
 
 			if ($info eq '.') {
-				$info = "$warning";
+				$info = "$info_str";
 			}
 
 			else {
-				$info .= ", $warning";
+				$info .= ";$info_str";
 			}
 
-			print(STDERR "$warning\n\tPOS: $pos\n");
+			warning("$warning\n\tchr: $chr pos: $pos");
+		}
+
+		my $rec_id = "$chr\t$pos\t$id";
+		my $allele_count = $rec_id_allele_counts{$rec_id};
+
+		if (! defined($allele_count)) {
+			next();
 		}
 
 		$format .= ':AD';
 
 		print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts));
+
+		my $head_node = $pos;
 
 		foreach my $file_base (@file_bases) {
 			my %gt_cov = ();
@@ -99,11 +110,24 @@ sub print_gfa_var_gts {
 			foreach my $gt (0..$allele_count - 1) {
 				my $cov = 0;
 
-				if (exists($rec_gt_segs{$rec_id}{$gt})) {
-					my $seg = $rec_gt_segs{$rec_id}{$gt};
+				if (exists($rec_gt_nodes{$rec_id}{$gt})) {
+					my $var_node = $rec_gt_nodes{$rec_id}{$gt};
+					my $node1 = $head_node;
+					my $node2 = $var_node;
 
-					if (exists($pack_covs{$file_base}{$seg})) {
-						$cov = $pack_covs{$file_base}{$seg};
+					if ($node1 > $node2) {
+						my $tmp = $node1;
+
+						$node1 = $node2;
+						$node2 = $tmp;
+					}
+
+					if (exists($pack_covs{$file_base}{$node1}{$node2})) {
+						$cov = $pack_covs{$file_base}{$node1}{$node2};
+					}
+
+					else {
+						warning("pack edge node not found: file_base: $file_base\tnode1: $node1\tnode2: $node2");
 					}
 				}
 
@@ -266,106 +290,41 @@ sub parse_pack_file {
 
 	push(@file_bases, $file_base);
 
-	my $file_type;
-	my %pack_sums_counts = ();
+	# from.id	from.start	to.id	to.end	coverage
+	# 2	0	3	0	0
+	# 2	1	1444489	1	0
 
 	while (my $line = <$pack_fh>) {
 		chomp($line);
 
-		if ($line =~ /^seq\.pos/) {
-			$file_type = 'pos_cov';
-
+		if ($line =~ /^from\.id/) {
 			next();
 		}
 
-		elsif ($line =~ /^node\.id/) {
-			$file_type = 'seg_cov';
+		my ($node1_id, $node1_orientation, $node2_id, $node2_orientation, $cov) = split(/\t/, $line);
 
+		if ((defined($node1_id) && defined($node1_orientation) && defined($node2_id) && defined($node2_orientation) && defined($cov)) == 0) {
+			error("invalid format found in pack edge table: $pack_file\n\t$line");
+		}
+
+		if ($use_model == 1) {
+			if ($cov > 0) {
+				$cov_histo{$cov}++;
+			}
+		}
+
+		if (! exists($gfa_nodes{$node1_id}) || ! exists($gfa_nodes{$node2_id})) {
+#warning("node id(s) not found in GFA\tfile_base: $file_base\tnode1_id: $node1_id\tnode2_id: $node2_id");
 			next();
 		}
+#else{
+#warning("node ids found in GFA\tfile_base: $file_base\tnode1_id: $node1_id\tnode2_id: $node2_id");
+#}
 
-		if (! defined($file_type)) {
-			error("invalid record found in pack file: $pack_file\n\t$line");
-		}
-
-		if ($file_type eq 'pos_cov') {
-			my ($seq_pos, $node_id, $node_offset, $cov) = split(/\t/, $line);
-
-			if ($use_model == 1) {
-				if ($cov > 0) {
-					$cov_histo{$cov}++;
-				}
-			}
-
-			if (! exists($gfa_segs{$node_id})) {
-				next();
-			}
-
-			if (defined($use_avg_var_cov)) {
-				$pack_sums_counts{$file_base}{$node_id}{'sum'} += $cov;
-				$pack_sums_counts{$file_base}{$node_id}{'count'}++;
-			}
-
-			else {
-				if ($node_offset == 0) {
-					$pack_covs{$file_base}{$node_id} = $cov;
-				}
-			}
-		}
-
-		elsif ($file_type eq 'seg_cov') {
-			my ($node_id, $covs) = split(/\t/, $line);
-			my @covs = split(',', $covs);
-
-			if ($use_model == 1) {
-				foreach my $cov (@covs) {
-					if ($cov > 0) {
-						$cov_histo{$cov}++;
-					}
-				}
-			}
-
-			if (! exists($gfa_segs{$node_id})) {
-				next();
-			}
-
-			if (defined($use_avg_var_cov)) {
-				my $sum = 0;
-				my $avg = 0;
-
-				foreach my $cov (@covs) {
-					$sum += $cov
-				}
-
-				if ($#covs >= 0) {
-					$avg = int(($sum / ($#covs + 1)) + 0.5);
-				}
-
-				$pack_covs{$file_base}{$node_id} = $avg;
-			}
-
-			else {
-				$pack_covs{$file_base}{$node_id} = $covs[0];
-			}
-		}
+		$pack_covs{$file_base}{$node1_id}{$node2_id} = $cov;
 	}
 
 	close($pack_fh);
-
-
-	if ($file_type eq 'pos_cov' && defined($use_avg_var_cov)) {
-		foreach my $file_base (keys %pack_sums_counts) {
-			foreach my $node_id (keys %{$pack_sums_counts{$file_base}}) {
-				my $sum = $pack_sums_counts{$file_base}{$node_id}{'sum'};
-				my $count = $pack_sums_counts{$file_base}{$node_id}{'count'};
-				my $avg = int(($sum / $count) + 0.5);
-
-				$pack_covs{$file_base}{$node_id} = $avg;
-			}
-		}
-
-		undef %pack_sums_counts;
-	}
 
 
 	if ($use_model == 1) {
@@ -419,8 +378,12 @@ sub parse_gfa_var_file {
 			next();
 		}
 
-		if ($rm_inv_head == 1 && $pos =~ /^\-/) {
-			next();
+		if ($pos =~ /\-$/) {
+			if ($rm_inv_head == 1) {
+				next();
+			}
+
+			$pos =~ s/\-$//;
 		}
 
 		my $type;
@@ -441,21 +404,33 @@ sub parse_gfa_var_file {
 
 		my @alts = split(',', $alts);
 		my @alleles = ($ref, @alts);
-		my $shared_seg = $pos;
+		my $head_node = $pos;
 		my $rec_id = "$chr\t$pos\t$id";
 
 		$rec_id_allele_counts{$rec_id} = $#alleles + 1;
+		$gfa_nodes{$head_node}++;
 
 		foreach my $gt (0..$#alleles) {
-			my $seg = $alleles[$gt];
+			my $node = $alleles[$gt];
 
-			$gfa_segs{$seg}++;
-			$rec_gt_segs{$rec_id}{$gt} = $seg;
-			$rec_seg_gts{$rec_id}{$seg} = $gt;
+			$gfa_nodes{$node}++;
+			$rec_gt_nodes{$rec_id}{$gt} = $node;
+			$rec_node_gts{$rec_id}{$node} = $gt;
 		}
 	}
 
 	close(GFA_VARS);
+
+	return(0);
+}
+
+
+sub warning {
+	my $msg = shift();
+
+	if (defined($msg)) {
+		print(STDERR "warning: $msg\n");
+	}
 
 	return(0);
 }
@@ -493,7 +468,6 @@ sub parse_args {
 	GetOptions ('v|var=s' => \$gfa_var_file,
 				'p|pack=s{,}' => \@pack_files,
 				'packlist=s' => \$pack_list_file,
-				'edge_cov' => \$use_edge_cov,
 				'ploidy=i' => \$ploidy,
 				'rm_inv_head' => \$rm_inv_head,
 				'm|model' => \$use_model,
@@ -529,10 +503,6 @@ sub parse_args {
 
 	if (! @pack_files) {
 		arg_error('at least 1 pack table file required');
-	}
-
-	if ($use_edge_cov == 1) {
-		$use_avg_var_cov = 0;
 	}
 
 	if ($ploidy != 1 && $ploidy != 2) {
@@ -599,25 +569,17 @@ Brian Abernathy
 
  -v --var       gfa variants file (required)
 
- -p --pack      vg pack table or segment coverage file(s)
-                  ex: -p sample.1.pack.table sample.2.pack.table
+ -p --pack      vg pack edge table(s)
+                  ex: -p sample.1.pack.edge.table sample.2.pack.edge.table.gz
 
- --packlist     text file containing list of pack or segment coverage
-                  file paths (1 file per line)
+ --packlist     text file containing list of pack edge tables
+                  (1 file per line)
 
-1 or more pack (table or segment coverage) files may be specified
-using -p/--pack and/or --packlist. Pack table files are generated
-using the `vg pack -d` command. Pack segment coverage files are
-generated using pack_table_to_seg_cov.pl, which is part of the
-gfa_var_genotyper project. 
-(https://github.com/brianabernathy/gfa_var_genotyper) Pack files
-may be uncompressed or compressed using either gzip or bzip2.
-(.gz or .bz2 file extension)
-
- --edge_cov     use coverage from only first variant node position
-                (adjacent to head node) when calculating allele
-                depth (AD) values
-                  default: use average coverage of first variant node
+1 or more vg (https://github.com/vgteam/vg) pack edge tables may be
+specified using -p/--pack and/or --packlist. Pack edge tables are
+generated using the `vg pack -D` command. Pack edge tables may be
+uncompressed or compressed using either gzip or bzip2. (.gz or .bz2
+file extension)
 
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
