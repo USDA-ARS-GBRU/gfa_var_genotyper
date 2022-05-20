@@ -67,11 +67,12 @@ sub print_gfa_var_gts {
 			next();
 		}
 
-		if ($pos =~ /\-$/) {
+		if ($pos =~ /\-/) {
 			if ($rm_inv_head == 1) {
 				next();
 			}
 
+			$pos =~ s/^\-//;
 			$pos =~ s/\-$//;
 
 			my $warning = 'inverted head node found, see --rm_inv_head option for more information';
@@ -290,10 +291,6 @@ sub parse_pack_file {
 
 	push(@file_bases, $file_base);
 
-	# from.id	from.start	to.id	to.end	coverage
-	# 2	0	3	0	0
-	# 2	1	1444489	1	0
-
 	while (my $line = <$pack_fh>) {
 		chomp($line);
 
@@ -314,12 +311,8 @@ sub parse_pack_file {
 		}
 
 		if (! exists($gfa_nodes{$node1_id}) || ! exists($gfa_nodes{$node2_id})) {
-#warning("node id(s) not found in GFA\tfile_base: $file_base\tnode1_id: $node1_id\tnode2_id: $node2_id");
 			next();
 		}
-#else{
-#warning("node ids found in GFA\tfile_base: $file_base\tnode1_id: $node1_id\tnode2_id: $node2_id");
-#}
 
 		$pack_covs{$file_base}{$node1_id}{$node2_id} = $cov;
 	}
@@ -378,7 +371,7 @@ sub parse_gfa_var_file {
 			next();
 		}
 
-		if ($pos =~ /\-$/) {
+		if ($pos =~ /\-/) {
 			if ($rm_inv_head == 1) {
 				next();
 			}
@@ -392,7 +385,7 @@ sub parse_gfa_var_file {
 			$type = 'complex';
 		}
 
-		elsif ($ref =~ s/^multiPath\.//) {
+		elsif ($ref =~ s/^multiPath\.//i) {
 			$type = 'multipath';
 		}
 
@@ -587,13 +580,12 @@ file extension)
  --rm_inv_head  remove variants with inverted head node
                   default: disabled
                  
-Inversion variants can result in a negative sign suffix in the head
-node (POS) field.  Conventionally, this field represents the position
+Inversion variants can result in a negative sign prefix in the 'POS'
+field head node id. Conventionally, this field represents the position
 in the reference genome and negative values may cause issues with tools
-that use vcfs.  To remove such variants from vcf ouput, use
---rm_inv_head.  Note, the reciprocal variant of the inversion should
-be called regardless, so the variant information is still retained for
-most practical purposes.
+that use vcfs. To remove such variants from vcf ouput, use --rm_inv_head.
+Note, the reciprocal variant of the inversion should be called regardless,
+so the variant information is still retained for most practical purposes. 
 
 =head2 genotyping options
 
