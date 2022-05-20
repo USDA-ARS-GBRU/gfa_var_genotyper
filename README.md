@@ -30,12 +30,12 @@ Options:
      --rm_inv_head  remove variants with inverted head node
                       default: disabled
 
-    Inversion variants can result in a negative sign suffix in the head node
-    (POS) field. Conventionally, this field represents the position in the
-    reference genome and negative values may cause issues with tools that
-    use vcfs. To remove such variants from vcf ouput, use --rm_inv_head.
-    Note, the reciprocal variant of the inversion should be called
-    regardless, so the variant information is still retained for most
+    Inversion variants can result in a negative sign prefix in the 'POS'
+    field head node id. Conventionally, this field represents the position
+    in the reference genome and negative values may cause issues with tools
+    that use vcfs. To remove such variants from vcf ouput, use
+    --rm_inv_head. Note, the reciprocal variant of the inversion should be
+    called regardless, so the variant information is still retained for most
     practical purposes.
 
   genotyping options:
@@ -92,3 +92,87 @@ Options:
   help:
 
      -h --help    display help menu
+
+---
+
+### gfa_variants.pl
+
+Usage:
+
+    gfa_variants.pl -g graph.gfa [options] > graph.vcf
+
+Description:
+
+    gfa_variants.pl writes node-based GFA graph variants to a VCF-like file
+
+    Variants are based on branch positions in the graph. gfa_variants.pl
+    understands when a reverse-oriented variant is the same as a forward
+    variant and so produces biologically appropriate variants within long
+    inversions that are ortholgous despite their structural difference. This
+    behavior constrasts to available tools that we know of.
+
+    Output is VCF-like, but instead of the 'POS' field being expressed in
+    linear coordinates they are instead ordered graph node ids. If you have
+    used xmfa_tools.pl with sorting enabled
+    (https://github.com/brianabernathy/xmfa_tools), the node order will
+    reflect the primary sort reference that you specified (then secondary,
+    etc.). In other words, they are collinear with the genome sequence of
+    that reference. Though these node ids do not represent useful physical
+    distances, they can be determined using gfa_nodes_to_linear_coords.pl
+    and vcf_node_to_linear_coords.pl to convert graph-based vcfs to linear
+    coordinates.
+
+    The gfa_variants.pl output POS field refers to the node id corresponding
+    to the 'head node'. 'Allelic nodes', which serve as the REF and ALT
+    fields, are the two possible branches extending from the head node. If
+    these two branches return to the same node over after a single allelic
+    node, node sequences are used to determine the explicit base change.
+    Otherwise, variants are encoded as 'long', 'dense' or 'multipath' with
+    the relevant node id suffix.
+
+    Simple indels are encoded differently than conventional vcf format.
+    Instead of giving the reference base and the insertion (or vice versus
+    for deletions), gfa_variants.pl uses the '-' character and the indel
+    sequence. We find this more intuitive and in keeping with the variation
+    graph concept, but this difference may break tools expecting a
+    traditional vcf.
+
+    Inversion variants can result in a negative sign prefix in the 'POS'
+    field head node id. Conventionally, this field represents the position
+    in the reference genome and negative values may cause issues with tools
+    that use vcfs. Note, the reciprocal variant of the inversion should be
+    called regardless, so the variant information is still retained for most
+    practical purposes.
+
+Options:
+
+  general options:
+
+     -g --gfa        genome gfa file, vg-based (required)
+
+     -c --chr_delim  pattern used to split genotype from chromosome in path names
+                       default: '\.'
+
+     -h --help       display help menu
+
+---
+
+### gfa_nodes_to_linear_coords.pl
+
+Usage:
+
+    gfa_nodes_to_linear_coords.pl [options] > gfa_node_coords.out
+
+Description: 
+
+    gfa_nodes_to_linear_coords.pl uses an input GFA file to generate
+    linear reference coordinates for each graph node
+
+Options:
+
+  general options:
+
+     -g --gfa       genome gfa file, vg-based (required)
+
+     -h --help      display help menu
+
