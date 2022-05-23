@@ -220,8 +220,8 @@ sub parse_gfa_file {
 
 	@genos = sort(keys %genos);
 
-	print(STDERR "the following genotypes were found: ", join(',', @genos), "\n");
-	print(STDERR "the following chromosomes were found: ", join(',', sort(keys %paths)), "\n");
+	print(STDERR "the following genotypes were found: ", join(', ', @genos), "\n");
+	print(STDERR "the following chromosomes were found: ", join(', ', sort(keys %paths)), "\n");
 
 	return(0);
 }
