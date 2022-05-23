@@ -216,7 +216,7 @@ sub parse_gfa_file {
 
 			if (! defined($path_chr)) {
 				print(STDERR "warning: can't determine path chr from $path_name, using chr0\n");
-				print(STDERR "\tif $gfa_file contains chromosomes in the path names, use -c/--chr_delim option to configure path name parsing\n");
+				print(STDERR "\tif $gfa_file contains chromosomes in the path names, use -d/--delim option to configure path name parsing\n");
 
 				$path_chr = 'chr0';
 			}
