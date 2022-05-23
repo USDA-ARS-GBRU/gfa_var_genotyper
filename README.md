@@ -119,7 +119,7 @@ Description:
     etc.). In other words, they are collinear with the genome sequence of
     that reference. Though these node ids do not represent useful physical
     distances, they can be determined using gfa_nodes_to_linear_coords.pl
-    and vcf_node_to_linear_coords.pl to convert graph-based vcfs to linear
+    and vcf_nodes_to_linear_coords.pl to convert graph-based vcfs to linear
     coordinates.
 
     The gfa_variants.pl output POS field refers to the node id corresponding
