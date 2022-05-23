@@ -150,8 +150,14 @@ Options:
 
      -g --gfa        genome gfa file, vg-based (required)
 
-     -c --chr_delim  pattern used to split genotype from chromosome in path names
+     -d --delim      pattern used to split genotype from chromosome in path names
                        default: '\.'
+
+     -p --prefix     prefix prepended to chromosome names
+                       useful if part of the chromosome name is used to split path
+                       names and therefore discarded
+                       ex: -d '\.chr' -p 'chr'
+                       default: none
 
      -h --help       display help menu
 
