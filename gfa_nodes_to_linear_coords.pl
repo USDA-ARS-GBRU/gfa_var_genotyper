@@ -66,7 +66,7 @@ sub parse_gfa_file {
 	close(GFA);
 
 
-	foreach my $path_name (keys %path_nodes) {
+	foreach my $path_name (sort keys %path_nodes) {
 		my $path_pos = 0;
 
 		foreach my $index (0..$#{$path_nodes{$path_name}}) {
