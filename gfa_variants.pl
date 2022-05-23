@@ -8,6 +8,7 @@ use warnings;
 
 my $gfa_file;
 my $chr_delim = '\.';
+my $chr_prefix;
 my $help;
 
 my %paths = ();
@@ -209,6 +210,10 @@ sub parse_gfa_file {
 			my ($rec_type, $path_name, $nodes, $overlaps) = split(/\t/, $line);
 			my ($path_geno, $path_chr) = split(/$chr_delim/, $path_name);
 
+			if (defined($chr_prefix)) {
+				$path_chr = "${chr_prefix}${path_chr}";
+			}
+
 			if (! defined($path_chr)) {
 				print(STDERR "warning: can't determine path chr from $path_name, using chr0\n");
 				print(STDERR "\tif $gfa_file contains chromosomes in the path names, use -c/--chr_delim option to configure path name parsing\n");
@@ -262,7 +267,8 @@ sub parse_args {
 	}
 
 	GetOptions ('g|gfa=s' => \$gfa_file,
-				'c|chr_delim=s' => \$chr_delim,
+				'd|delim=s' => \$chr_delim,
+				'p|prefix=s' => \$chr_prefix,
 				'h|help' => \$help) or error('cannot parse arguments');
 
 	if (defined($help)) {
@@ -309,8 +315,14 @@ Brian Abernathy
 
  -g --gfa        genome gfa file, vg-based (required)
 
- -c --chr_delim  pattern used to split genotype from chromosome in path names
+ -d --delim      pattern used to split genotype from chromosome in path names
                    default: '\.'
+
+ -p --prefix     prefix prepended to chromosome names
+                   useful if part of the chromosome name is used to split path
+                   names and therefore discarded
+                   ex: -d '\.chr' -p 'chr'
+                   default: none
 
  -h --help       display help menu
 
