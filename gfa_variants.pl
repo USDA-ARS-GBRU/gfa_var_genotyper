@@ -12,6 +12,7 @@ my $help;
 
 my %paths = ();
 my %seqs = ();
+my %inv_head_nodes = ();
 my @genos = ();
 
 parse_args();
@@ -60,7 +61,7 @@ sub call_vars {
 						# negate node1 id to differentiate from +node1
 						$node1 = "-$node1";
 
-						print(STDERR "warning: inverted head node\tpath: $path_name\tnode1: $node1\tnode2: $node2\n");
+						$inv_head_nodes{$node1} = "path: $path_name\tnode1: $node1\tnode2: $node2";
 					}
 				}
 
@@ -98,6 +99,10 @@ sub call_vars {
 			# monomorphic
 			if ($node_counts{$head_node} <= 1) {
 				next();
+			}
+
+			if (exists($inv_head_nodes{$head_node})) {
+				print(STDERR "warning: inverted head node\t$inv_head_nodes{$head_node}\n");
 			}
 
 			my $ref_node;
@@ -286,7 +291,7 @@ gfa_variants.pl writes node-based GFA graph variants to a VCF-like file
 
 Variants are based on branch positions in the graph. gfa_variants.pl understands when a reverse-oriented variant is the same as a forward variant and so produces biologically appropriate variants within long inversions that are ortholgous despite their structural difference.  This behavior constrasts to available tools that we know of.  
 
-Output is VCF-like, but instead of the 'POS' field being expressed in linear coordinates they are instead ordered graph node ids.  If you have used xmfa_tools.pl with sorting enabled (https://github.com/brianabernathy/xmfa_tools), the node order will reflect the primary sort reference that you specified (then secondary, etc.).  In other words, they are collinear with the genome sequence of that reference.  Though these node ids do not represent useful physical distances, they can be determined using gfa_nodes_to_linear_coords.pl and vcf_node_to_linear_coords.pl to convert graph-based vcfs to linear coordinates.
+Output is VCF-like, but instead of the 'POS' field being expressed in linear coordinates they are instead ordered graph node ids.  If you have used xmfa_tools.pl with sorting enabled (https://github.com/brianabernathy/xmfa_tools), the node order will reflect the primary sort reference that you specified (then secondary, etc.).  In other words, they are collinear with the genome sequence of that reference.  Though these node ids do not represent useful physical distances, they can be determined using gfa_nodes_to_linear_coords.pl and vcf_nodes_to_linear_coords.pl to convert graph-based vcfs to linear coordinates.
 
 The gfa_variants.pl output POS field refers to the node id corresponding to the 'head node'.  'Allelic nodes', which serve as the REF and ALT fields, are the two possible branches extending from the head node.  If these two branches return to the same node over after a single allelic node, node sequences are used to determine the explicit base change. Otherwise, variants are encoded as 'long', 'dense' or 'multipath' with the relevant node id suffix.
 
