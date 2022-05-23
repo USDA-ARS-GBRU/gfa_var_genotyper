@@ -188,7 +188,6 @@ sub call_vars {
 
 sub parse_gfa_file {
 	my %genos = ();
-	my %chrs = ();
 
 	open(GFA, '<', $gfa_file) or error("can't open $gfa_file: $!");
 
@@ -213,7 +212,6 @@ sub parse_gfa_file {
 			}
 
 			$genos{$path_geno}++;
-			$chrs{$path_chr}++;
 			$paths{$path_chr}{$path_geno} = $line;
 		}
 	}
@@ -221,7 +219,7 @@ sub parse_gfa_file {
 	close(GFA);
 
 	@genos = sort(keys %genos);
-	@chrs = sort(keys %chrs);
+	my @chrs = sort(keys %paths);
 
 	print(STDERR "the following genotypes were found: ", join(',', @genos), "\n");
 	print(STDERR "the following chromosomes were found: ", join(',', @chrs), "\n");
