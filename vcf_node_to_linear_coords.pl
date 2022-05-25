@@ -170,8 +170,8 @@ sub parse_vcf {
 
 				$pos = $path_pos;
 
-				# increment SNP pos to 1 bp beyond end of head node
-				if ($var_type eq 'snp') {
+				# increment SNP or MNV pos to 1 bp beyond end of head node
+				if ($var_type eq 'snp' || $var_type eq 'mnv') {
 					$pos++;
 				}
 
@@ -260,6 +260,18 @@ vcf_node_to_linear_coords.pl
 =head1 SYNOPSIS
 
 vcf_node_to_linear_coords.pl -c coords.file -v node.based.vcf -g genotype [options] > geno.coords.vcf
+
+vcf_node_to_linear_coords.pl converts graph-based variant nodes to linear coordinates for one or more
+specified reference genotypes. vcf_node_to_linear_coords.pl requires a coords file from
+gfa_nodes_to_linear_coords.pl and a vcf file from gfa_var_genotyper.pl One or more reference genotypes
+(found in the coords file) must also be specified.
+
+Some graph nodes do not contain sequence for all available reference genotypes. The linear coordinates
+will be produced based on the order of reference genotypes provided using the -g/--geno option.
+
+For example, if genotypes were specified as '-g geno1 -g geno2 -g geno3', then linear coordinates for
+geno1 would be produced when a particular node contains geno1 sequence. If the node does not share
+sequence with geno1, then geno2 is checked, then geno3...
 
 =head1 AUTHOR
 
