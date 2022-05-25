@@ -163,15 +163,13 @@ gfa_nodes_to_linear_coords.pl [options] > gfa_node_coords.out
 =head1 DESCRIPTION
 
 gfa_nodes_to_linear_coords.pl uses an input GFA file to generate
-linear reference coordinates for each graph node
+linear coordinates for each reference and graph node
 
 =head1 AUTHOR
 
 Brian Abernathy
 
 =head1 OPTIONS
-
-=head2 general options
 
  -g --gfa       genome gfa file, vg-based (required)
 

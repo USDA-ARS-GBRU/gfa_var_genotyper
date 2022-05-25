@@ -146,8 +146,6 @@ Description:
 
 Options:
 
-  general options:
-
      -g --gfa        genome gfa file, vg-based (required)
 
      -d --delim      pattern used to split genotype from chromosome in path names
@@ -172,13 +170,52 @@ Usage:
 Description: 
 
     gfa_nodes_to_linear_coords.pl uses an input GFA file to generate
-    linear reference coordinates for each graph node
+    linear coordinates for each reference and graph node
 
 Options:
-
-  general options:
 
      -g --gfa       genome gfa file, vg-based (required)
 
      -h --help      display help menu
 
+
+---
+
+### vcf_node_to_linear_coords.pl 
+
+Usage:
+
+    vcf_node_to_linear_coords.pl -c coords.file -v node.based.vcf -g
+    genotype [options] > geno.coords.vcf
+
+Options:
+
+     -c --coords     coords file (required)
+                       produced by gfa_nodes_to_linear_coords.pl
+                       can be in gzip or bzip2 format
+
+     -v --vcf        node-based vcf file (required)
+                       produced by gfa_var_genotyper.pl
+
+     -g --geno       genotype(s) used as reference for linear coordinates
+                       one genotype required, can enter multiple genotypes
+
+                       when multiple genotypes are provided, coordinates for the
+                       first genotype will be output, when available, followed by
+                       the second genotype, then third, etc...
+
+                       ex: -g geno1
+                       ex: -g geno1 -g geno2 ... -g genoX
+                   
+
+     -d --delim      pattern used to split genotype from chromosome in path names
+                       default: '\.'
+
+     -p --prefix     prefix prepended to chromosome names
+                       useful if part of the chromosome name is used to split path
+                       names and therefore discarded
+
+                       ex: -d '\.chr' -p 'chr'
+                       default: none
+
+     -h --help       display help menu

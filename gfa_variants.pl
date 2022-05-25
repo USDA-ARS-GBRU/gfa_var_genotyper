@@ -311,8 +311,6 @@ Brian Abernathy
 
 =head1 OPTIONS
 
-=head2 general options
-
  -g --gfa        genome gfa file, vg-based (required)
 
  -d --delim      pattern used to split genotype from chromosome in path names
