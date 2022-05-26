@@ -8,7 +8,7 @@ gfa_var_genotyper also requires [vg](https://github.com/vgteam/vg "vg") for read
 
 ## brief overview
 
-assumes GFA graph contains paths in geno.chrXX path format
+The following assumes the GFA graph contains path names in geno.chrXX format. If not, adjust regular expressions in `vg gbwt`, `gfa_variants.pl` and `vcf_nodes_to_linear_coords.pl` appropriately.
 
 ### generate giraffe indexes
 
@@ -34,7 +34,7 @@ assumes GFA graph contains paths in geno.chrXX path format
 
 ### generate graph variants, genotype samples, convert graph nodes to linear coordinates
 
-- `gfa_variants.pl -g graph.gfa > graph.variants.vcf`
+- `gfa_variants.pl -d '\.chr' -p 'chr' -g graph.gfa > graph.variants.vcf`
 
 - `gfa_var_genotyper -v graph.variants.vcf -p sample1.mq60.pack.edge.table.gz -p sample2.mq60.pack.edge.table.gz ... -p sampleX.mq60.pack.edge.table.gz --rm_inv_head --ploidy 1 --low_cov --min_tot_cov 1 > graph.variants.sample.genos.vcf`
 
@@ -42,7 +42,7 @@ assumes GFA graph contains paths in geno.chrXX path format
 
 - `gfa_nodes_to_linear_coords.pl -g graph.gfa | gzip > graph.nodes_to_linear_coords.txt.gz`
 
-- `vcf_node_to_linear_coords.pl -c graph.nodes_to_linear_coords.txt.gz -v graph.variants.sample.genos.vcf -g primary.ref.geno > graph.variants.sample.genos.linear.coords.vcf`
+- `vcf_node_to_linear_coords.pl -d '\.chr' -p 'chr' -c graph.nodes_to_linear_coords.txt.gz -v graph.variants.sample.genos.vcf -g primary.ref.geno > graph.variants.sample.genos.linear.coords.vcf`
 
   Reference genotypes are those used to generate the original graph.gfa and have associated coordinates found in graph.nodes_to_linear_coords.txt.gz The 'primary.ref.geno' will be used as the preferred reference genotype to anchor linear coordinates to. Additional reference genotypes can be provided, see full vcf_node_to_linear_coords.pl documentation for details.
 
@@ -231,16 +231,16 @@ Options:
 
 ---
 
-### vcf_node_to_linear_coords.pl 
+### vcf_nodes_to_linear_coords.pl 
 
 Usage:
 
-    vcf_node_to_linear_coords.pl -c coords.file -v node.based.vcf -g
+    vcf_nodes_to_linear_coords.pl -c coords.file -v node.based.vcf -g
     genotype [options] > geno.coords.vcf
 
 Description:
 
-    vcf_node_to_linear_coords.pl converts graph-based variant nodes to
+    vcf_nodes_to_linear_coords.pl converts graph-based variant nodes to
     linear coordinates for one or more specified reference genotypes.
     vcf_node_to_linear_coords.pl requires a coords file from
     gfa_nodes_to_linear_coords.pl and a vcf file from gfa_var_genotyper.pl
