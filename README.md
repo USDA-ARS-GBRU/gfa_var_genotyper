@@ -1,5 +1,49 @@
 # gfa_var_genotyper
 
+A set of tools to extract and genotype graph-based variants. Tools are also
+provided to convert graph-based nodes to linear reference coordinates.
+
+The tool set requires a graph in GFA format, see [xmfa_tools](https://github.com/brianabernathy/xmfa_tools "xmfa_tools") for more detail.
+gfa_var_genotyper also requires [vg](https://github.com/vgteam/vg "vg") for read mapping.
+
+## brief overview
+
+assumes GFA graph contains paths in geno.chrXX path format
+
+### generate giraffe indexes
+
+- `vg gbwt --progress --path-regex "(.*)\.(.*)" --path-fields "_SC" -G graph.gfa --gbz-format -g graph.gbz`
+
+- `vg snarls -T graph.gbz > graph.snarls`
+
+- `vg index graph.gbz -s graph.snarls -j graph.dist`
+
+- `vg minimizer --distance-index graph.dist graph.gbz -o graph.min`
+
+- `vg convert -x -g graph.gfa > graph.xg`
+
+### map and filter reads, create pack edge tables
+
+- `vg giraffe -Z graph.gbz -d graph.dist -m graph.min -f sample1.r1.fq.gz -f sample1.r2.fq.gz > sample1.gam`
+
+- `vg filter --min-mapq 60 sample1.gam > sample1.mq60.gam` (MQ filtering is optional)
+
+- `vg pack -x graph.xg -g sample1.mq60.gam -D | gzip > sample1.mq60.pack.edge.table.gz`
+
+### generate graph variants, genotype samples, convert graph nodes to linear coordinates
+
+- `gfa_variants.pl -g graph.gfa > graph.variants.vcf`
+
+- `gfa_var_genotyper -v graph.variants.vcf -p sample1.mq60.pack.edge.table.gz -p sample2.mq60.pack.edge.table.gz ... -p sampleX.mq60.pack.edge.table.gz --rm_inv_head --ploidy 1 --low_cov --min_tot_cov 1 > graph.variants.sample.genos.vcf`
+
+- `gfa_nodes_to_linear_coords.pl -g graph.gfa | gzip > graph.nodes_to_linear_coords.txt.gz`
+
+- `vcf_node_to_linear_coords.pl -c graph.nodes_to_linear_coords.txt.gz -v graph.variants.sample.genos.vcf -g primary.ref.geno -g secondary.ref.geno > graph.variants.sample.genos.linear.coords.vcf`
+
+More complete documentation for each tool is available below.
+
+---
+
 ### gfa_var_genotyper.pl
 
 Usage:
@@ -13,7 +57,7 @@ Options:
      -v --var       gfa variants file (required)
 
      -p --pack      vg pack edge table(s)
-                      ex: -p sample.1.pack.edge.table sample.2.pack.edge.table.gz
+                      ex: -p sample.1.pack.edge.table -p sample.2.pack.edge.table.gz
 
      --packlist     text file containing list of pack edge tables
                       (1 file per line)
