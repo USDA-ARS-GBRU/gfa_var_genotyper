@@ -563,7 +563,7 @@ Brian Abernathy
  -v --var       gfa variants file (required)
 
  -p --pack      vg pack edge table(s)
-                  ex: -p sample.1.pack.edge.table sample.2.pack.edge.table.gz
+                  ex: -p sample.1.pack.edge.table -p sample.2.pack.edge.table.gz
 
  --packlist     text file containing list of pack edge tables
                   (1 file per line)
