@@ -26,7 +26,9 @@ assumes GFA graph contains paths in geno.chrXX path format
 
 - `vg giraffe -Z graph.gbz -d graph.dist -m graph.min -f sample1.r1.fq.gz -f sample1.r2.fq.gz > sample1.gam`
 
-- `vg filter --min-mapq 60 sample1.gam > sample1.mq60.gam` (MQ filtering is optional, but recommended)
+- `vg filter --min-mapq 60 sample1.gam > sample1.mq60.gam`
+
+  MQ filtering is optional, but recommended
 
 - `vg pack -x graph.xg -g sample1.mq60.gam -D | gzip > sample1.mq60.pack.edge.table.gz`
 
@@ -35,12 +37,14 @@ assumes GFA graph contains paths in geno.chrXX path format
 - `gfa_variants.pl -g graph.gfa > graph.variants.vcf`
 
 - `gfa_var_genotyper -v graph.variants.vcf -p sample1.mq60.pack.edge.table.gz -p sample2.mq60.pack.edge.table.gz ... -p sampleX.mq60.pack.edge.table.gz --rm_inv_head --ploidy 1 --low_cov --min_tot_cov 1 > graph.variants.sample.genos.vcf`
-Multiple pack edge table files may be provided via the --packlist option.
+
+  Multiple pack edge table files may be provided via the --packlist option.
 
 - `gfa_nodes_to_linear_coords.pl -g graph.gfa | gzip > graph.nodes_to_linear_coords.txt.gz`
 
 - `vcf_node_to_linear_coords.pl -c graph.nodes_to_linear_coords.txt.gz -v graph.variants.sample.genos.vcf -g primary.ref.geno > graph.variants.sample.genos.linear.coords.vcf`
-Reference genotypes are those used to generate the original graph.gfa and have associated coordinates found in graph.nodes_to_linear_coords.txt.gz The 'primary.ref.geno' will be used as the preferred reference genotype to anchor linear coordinates to. Additional reference genotypes can be provided, see full vcf_node_to_linear_coords.pl documentation for details.
+
+  Reference genotypes are those used to generate the original graph.gfa and have associated coordinates found in graph.nodes_to_linear_coords.txt.gz The 'primary.ref.geno' will be used as the preferred reference genotype to anchor linear coordinates to. Additional reference genotypes can be provided, see full vcf_node_to_linear_coords.pl documentation for details.
 
 More complete documentation for each tool is available below.
 
