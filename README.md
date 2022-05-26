@@ -26,7 +26,7 @@ assumes GFA graph contains paths in geno.chrXX path format
 
 - `vg giraffe -Z graph.gbz -d graph.dist -m graph.min -f sample1.r1.fq.gz -f sample1.r2.fq.gz > sample1.gam`
 
-- `vg filter --min-mapq 60 sample1.gam > sample1.mq60.gam` (MQ filtering is optional)
+- `vg filter --min-mapq 60 sample1.gam > sample1.mq60.gam` (MQ filtering is optional, but recommended)
 
 - `vg pack -x graph.xg -g sample1.mq60.gam -D | gzip > sample1.mq60.pack.edge.table.gz`
 
