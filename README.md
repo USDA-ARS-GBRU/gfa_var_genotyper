@@ -12,13 +12,13 @@ assumes GFA graph contains paths in geno.chrXX path format
 
 ### generate giraffe indexes
 
-- `vg gbwt --progress --path-regex "(.*)\.(.*)" --path-fields "_SC" -G graph.gfa --gbz-format -g graph.gbz`
+- `vg gbwt --path-regex "(.*)\.(.*)" --path-fields "_SC" -G graph.gfa --gbz-format -g graph.gbz`
 
 - `vg snarls -T graph.gbz > graph.snarls`
 
 - `vg index graph.gbz -s graph.snarls -j graph.dist`
 
-- `vg minimizer --distance-index graph.dist graph.gbz -o graph.min`
+- `vg minimizer -d graph.dist graph.gbz -o graph.min`
 
 - `vg convert -x -g graph.gfa > graph.xg`
 
