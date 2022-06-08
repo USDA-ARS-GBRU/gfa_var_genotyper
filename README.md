@@ -6,7 +6,7 @@ provided to convert graph-based nodes to linear reference coordinates.
 The tool set requires a graph in GFA format, see [xmfa_tools](https://github.com/brianabernathy/xmfa_tools "xmfa_tools") for more detail.
 gfa_var_genotyper also requires [vg](https://github.com/vgteam/vg "vg") for read mapping.
 
-## brief overview
+## brief pipeline usage overview
 
 The following assumes the GFA graph contains path names in geno.chrXX format. If not, adjust regular expressions in `vg gbwt`, `gfa_variants.pl` and `vcf_nodes_to_linear_coords.pl` appropriately.
 
