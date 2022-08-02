@@ -256,6 +256,9 @@ Description:
     geno3', then linear coordinates for geno1 would be produced when a
     particular node contains geno1 sequence. If the node does not share
     sequence with geno1, then geno2 is checked, then geno3...
+    
+    Also note that long and/or complex variant alleles are converted to 
+    'AAAAAAAAAA', 'CCCCCCCCCC', etc..
 
 Options:
 
