@@ -15,7 +15,7 @@ provided to convert graph-based nodes to linear reference coordinates.
 The tool set requires a graph in GFA format, see [xmfa_tools](https://github.com/brianabernathy/xmfa_tools "xmfa_tools") for more detail.
 gfa_var_genotyper also requires [vg](https://github.com/vgteam/vg "vg") for read mapping.
 
-## brief overview
+## pipeline usage overview
 
 The following assumes the GFA graph contains path names in geno.chrXX format. If not, adjust regular expressions in `vg gbwt`, `gfa_variants.pl` and `vcf_nodes_to_linear_coords.pl` appropriately.
 
@@ -55,7 +55,8 @@ The following assumes the GFA graph contains path names in geno.chrXX format. If
 
   Reference genotypes are those used to generate the original graph.gfa and have associated coordinates found in graph.nodes_to_linear_coords.txt.gz The 'primary.ref.geno' will be used as the preferred reference genotype to anchor linear coordinates to. Additional reference genotypes can be provided, see full vcf_node_to_linear_coords.pl documentation for details.
 
-More complete documentation for each tool is available below.
+
+More complete documentation for each tool is available below. Tools can also be ran without options or -h/--help to display the help menu.
 
 ---
 
@@ -264,6 +265,9 @@ Description:
     geno3', then linear coordinates for geno1 would be produced when a
     particular node contains geno1 sequence. If the node does not share
     sequence with geno1, then geno2 is checked, then geno3...
+    
+    Also note that long and/or complex variant alleles are converted to 
+    'AAAAAAAAAA', 'CCCCCCCCCC', etc..
 
 Options:
 
