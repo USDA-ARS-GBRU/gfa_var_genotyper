@@ -27,11 +27,9 @@ The following assumes the GFA graph contains path names in geno.chrXX format. If
 
 - `vg snarls -T graph.gbz > graph.snarls`
 
-- `vg index graph.gbz -s graph.snarls -j graph.dist`
+- `vg index graph.gbz -j graph.dist`
 
 - `vg minimizer -d graph.dist graph.gbz -o graph.min`
-
-- `vg convert -x -g graph.gfa > graph.xg`
 
 ### map and filter reads, create pack edge tables
 
@@ -41,13 +39,13 @@ The following assumes the GFA graph contains path names in geno.chrXX format. If
 
   MQ filtering is optional, but recommended
 
-- `vg pack -x graph.xg -g sample1.mq60.gam -D | gzip > sample1.mq60.pack.edge.table.gz`
+- `vg pack -x graph.gbz -g sample1.mq60.gam -D | gzip > sample1.mq60.pack.edge.table.gz`
 
 ### generate graph variants, genotype samples, convert graph nodes to linear coordinates
 
 - `gfa_variants.pl -d '\.chr' -p 'chr' -g graph.gfa > graph.variants.vcf`
 
-- `gfa_var_genotyper -v graph.variants.vcf -p sample1.mq60.pack.edge.table.gz -p sample2.mq60.pack.edge.table.gz ... -p sampleX.mq60.pack.edge.table.gz --rm_inv_head --ploidy 1 --low_cov --min_tot_cov 1 > graph.variants.sample.genos.vcf`
+- `gfa_var_genotyper -v graph.variants.vcf -p sample.mq60.pack.edge.table.gz -l sample.label --rm_inv_head --ploidy 1 --low_cov --min_tot_cov 1 > graph.variants.sample.genos.vcf`
 
   Multiple pack edge table files may be provided via the --packlist option.
 
@@ -72,13 +70,9 @@ Options:
 
   general options:
 
-     -v --var       gfa variants file (required)
-
-     -p --pack      vg pack edge table(s)
-                      ex: -p sample.1.pack.edge.table -p sample.2.pack.edge.table.gz
-
-     --packlist     text file containing list of pack edge tables
-                      (1 file per line)
+     -v --var       graph variants file (required)
+                      can parse either vg deconstruct/minigraph-cactus
+                      format or gfa_variants.pl (PanPipes) format
 
     1 or more vg (https://github.com/vgteam/vg) pack edge tables may be
     specified using -p/--pack and/or --packlist. Pack edge tables are
@@ -86,13 +80,24 @@ Options:
     uncompressed or compressed using either gzip or bzip2. (.gz or .bz2 file
     extension)
 
+    For a single pack table and label use -p/--pack and -l/--label. For
+    multiple pack table files and labels use --packlist.
+
+     -p --pack      vg pack edge table
+                      ex: -p sample.1.pack.edge.table
+                      ex: -p sample.2.pack.edge.table.gz
+
+     -l --label     vg pack edge table label displayed in vcf header
+
+     --packlist     text file containing list of pack edge table files
+                      and labels (labels optional but recommended)
+                      (1 file and label per line, tab-delimited)
+
      --ploidy       1 (haploid) or 2 (diploid) currently supported
                       default: 1
 
-     --rm_inv_head  remove variants with inverted head node
-                      default: disabled
-
-    Inversion variants can result in a negative sign prefix in the 'POS'
+    Variants in gfa_variants.pl (PanPipes) format can contain inversion
+    variants, which can result in a negative sign prefix in the 'POS'
     field head node id. Conventionally, this field represents the position
     in the reference genome and negative values may cause issues with tools
     that use vcfs. To remove such variants from vcf ouput, use
@@ -100,6 +105,9 @@ Options:
     called regardless, so the variant information is still retained for most
     practical purposes.
 
+     --rm_inv_head  remove variants with inverted head node
+                    only applies to gfa_variants.pl (PanPipes) format
+                      default: disabled
   genotyping options:
 
     *Currently dynamic, model-based thresholds have not been fully
