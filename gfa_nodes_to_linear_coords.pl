@@ -7,6 +7,8 @@ use strict;
 use warnings;
 
 my $gfa_file;
+my $chr_delim_regex = '\.';
+my $chr_delim_str = '.';
 my $help;
 
 parse_args();
@@ -43,6 +45,37 @@ sub parse_gfa_file {
 			}
 
 			push(@{$path_nodes{$path_name}}, @nodes);
+		}
+
+		elsif ($line =~ /^W\t/) {
+			chomp($line);
+
+			my ($rec_type, $sample, $hap_index, $seq_id, $seq_start, $seq_end, $walk) = split(/\t/, $line);
+
+			if ($sample eq '_MINIGRAPH_') {
+				next();
+			}
+
+			my @walk_comps =  split(/(<|>)/,  $walk);
+			my $path_name = "${sample}${chr_delim_str}${seq_id}";
+
+			my $index = 1;
+
+			while ($index < $#walk_comps) {
+				my $orientation = '+';
+
+				if ($walk_comps[$index] eq '<') {
+					$orientation = '-';
+				}
+
+				my $node = $walk_comps[$index + 1];
+
+				$path_node_orientations{$path_name}{$node} = $orientation;
+				$node_lens{$node} = 0;
+				push(@{$path_nodes{$path_name}}, $node);
+
+				$index += 2;
+			}
 		}
 	}
 
@@ -136,6 +169,7 @@ sub parse_args {
 	}
 
 	GetOptions ('g|gfa=s' => \$gfa_file,
+				'd|delim=s' => \$chr_delim_regex,
 				'h|help' => \$help) or error('cannot parse arguments');
 
 	if (defined($help)) {
@@ -145,6 +179,9 @@ sub parse_args {
 	if (! defined($gfa_file)) {
 		arg_error('gfa file required');
 	}
+
+	$chr_delim_str = $chr_delim_regex;
+	$chr_delim_str =~ s/\\//g;
 
 	return(0);
 }
@@ -172,6 +209,9 @@ Brian Abernathy
 =head1 OPTIONS
 
  -g --gfa       genome gfa file, vg-based (required)
+
+ -d --delim     pattern used to split genotype from chromosome in path names
+                  default: '\.'
 
  -h --help      display help menu
 
