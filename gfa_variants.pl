@@ -51,8 +51,6 @@ sub call_vars {
 				my $index = 1;
 
 				while ($index < $#walk_comps) {
-#print(STDOUT "$index: $walk_comps[$index]\t$walk_comps[$index + 1]\n");
-					
 					my $orientation = '+';
 
 					if ($walk_comps[$index] eq '<') {
@@ -60,7 +58,6 @@ sub call_vars {
 					}
 
 					my $node = "$walk_comps[$index + 1]"."$orientation";
-#print(STDOUT "node: $node\n");
 
 					push(@nodes, $node);
 
