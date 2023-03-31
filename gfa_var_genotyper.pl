@@ -7,10 +7,14 @@ use strict;
 use warnings;
 
 my $gfa_var_file;
+my $deconstruct_format;
+my $pack_file;
+my $pack_label;
 my @pack_files = ();
+my %pack_labels = ();
 my $pack_list_file;
 my %node_lens = ();
-my %gfa_nodes = ();
+my %vcf_nodes = ();
 my $use_low_cov;
 my $min_tot_cov = 3;
 my $max_tot_cov;
@@ -25,11 +29,12 @@ my $gs_path;
 my $kmer_size = 31;
 my $help;
 
-my %rec_node_gts = ();
 my %rec_gt_nodes = ();
 my %rec_id_allele_counts = ();
 my %pack_covs = ();
-my @file_bases = ();
+my @pack_labels = ();
+my %pack_label_counts = ();
+my %pack_file_counts = ();
 
 parse_args();
 parse_gfa_var_file();
@@ -44,9 +49,21 @@ exit(0);
 
 
 sub print_gfa_var_gts {
-	open(GFA_VARS, '<', $gfa_var_file) or error("can't open gfa var file: $!");
+	my $gfa_var_fh;
 
-	while (my $line = <GFA_VARS>) {
+	if ($gfa_var_file =~ /\.gz$/) {
+		open($gfa_var_fh, '-|', "gzip -dc $gfa_var_file") or error("can't open $gfa_var_file: $!");
+	}
+
+	elsif ($gfa_var_file =~ /\.bz2$/) {
+		open($gfa_var_fh, '-|', "bzip2 -dc $gfa_var_file") or error("can't open $gfa_var_file: $!");
+	}
+
+	else {
+		open($gfa_var_fh, '<', $gfa_var_file) or error("can't open $gfa_var_file: $!");
+	}
+
+	while (my $line = <$gfa_var_fh>) {
 		chomp($line);
 
 		if ($line =~ /^##/) {
@@ -62,7 +79,7 @@ sub print_gfa_var_gts {
 		}
 
 		if ($chr eq '#CHROM') {
-			print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts, @file_bases), "\n");
+			print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts, @pack_labels), "\n");
 
 			next();
 		}
@@ -100,9 +117,7 @@ sub print_gfa_var_gts {
 
 		print(STDOUT join("\t", $chr, $pos, $id, $ref, $alts, $qual, $filter, $info, $format, @gts));
 
-		my $head_node = $pos;
-
-		foreach my $file_base (@file_bases) {
+		foreach my $pack_label (@pack_labels) {
 			my %gt_cov = ();
 			my %gt_cov_order = ();
 			my $tot_cov = 0;
@@ -112,23 +127,19 @@ sub print_gfa_var_gts {
 				my $cov = 0;
 
 				if (exists($rec_gt_nodes{$rec_id}{$gt})) {
-					my $var_node = $rec_gt_nodes{$rec_id}{$gt};
-					my $node1 = $head_node;
-					my $node2 = $var_node;
+					my $link_nodes = $rec_gt_nodes{$rec_id}{$gt};
+            		my ($head_node, $var_node) = split(/\t/, $link_nodes);
 
-					if ($node1 > $node2) {
-						my $tmp = $node1;
-
-						$node1 = $node2;
-						$node2 = $tmp;
+					if (exists($pack_covs{$pack_label}{$head_node}{$var_node})) {
+						$cov = $pack_covs{$pack_label}{$head_node}{$var_node};
 					}
 
-					if (exists($pack_covs{$file_base}{$node1}{$node2})) {
-						$cov = $pack_covs{$file_base}{$node1}{$node2};
+					elsif (exists($pack_covs{$pack_label}{$var_node}{$head_node})) {
+						$cov = $pack_covs{$pack_label}{$var_node}{$head_node};
 					}
 
 					else {
-						warning("pack edge node not found: file_base: $file_base\tnode1: $node1\tnode2: $node2");
+						#warning("pack edge node pair not found: pack_label: $pack_label\tnode1: $head_node\tnode2: $var_node");
 					}
 				}
 
@@ -260,6 +271,8 @@ sub print_gfa_var_gts {
 		print(STDOUT "\n");
 	}
 
+	close($gfa_var_fh);
+
 	return(0);
 }
 
@@ -268,28 +281,41 @@ sub parse_pack_file {
 	my $pack_file = shift();
 
 	my %cov_histo = ();
-	my $file_base = $pack_file;
 
 	my $pack_fh;
 
 	if ($pack_file =~ /\.gz$/) {
-		open($pack_fh, '-|', "gzip -dc $pack_file") or error("can't open pack file: $!");
+		open($pack_fh, '-|', "gzip -dc $pack_file") or error("can't open $pack_file: $!");
 	}
 
 	elsif ($pack_file =~ /\.bz2$/) {
-		open($pack_fh, '-|', "bzip2 -dc $pack_file") or error("can't open pack file: $!");
+		open($pack_fh, '-|', "bzip2 -dc $pack_file") or error("can't open $pack_file: $!");
 	}
 
 	else {
-		open($pack_fh, '<', $pack_file) or error("can't open pack file: $!");
+		open($pack_fh, '<', $pack_file) or error("can't open $pack_file: $!");
 	}
 
-	print(STDERR "processing pack file: $pack_file\n");
+	my $pack_label;
 
-	$file_base =~ s/^.*\///;
-	$file_base =~ s/\..*$//;
+	if (exists($pack_labels{$pack_file})) {
+		$pack_label = $pack_labels{$pack_file};
+	}
 
-	push(@file_bases, $file_base);
+	else {
+		$pack_label = $pack_file;
+		$pack_label =~ s/^.*\///;
+		$pack_label =~ s/\t/_/g;
+		$pack_label_counts{$pack_label}++;
+
+		if (scalar($pack_label_counts{$pack_label}) > 1) {
+			warning("duplicate label found: $pack_label");
+		}
+	}
+
+	push(@pack_labels, $pack_label);
+
+	print(STDERR "processing pack file: $pack_file\tlabel: $pack_label\n");
 
 	while (my $line = <$pack_fh>) {
 		chomp($line);
@@ -298,9 +324,9 @@ sub parse_pack_file {
 			next();
 		}
 
-		my ($node1_id, $node1_orientation, $node2_id, $node2_orientation, $cov) = split(/\t/, $line);
+		my ($node1_id, $node1_start, $node2_id, $node2_stop, $cov) = split(/\t/, $line);
 
-		if ((defined($node1_id) && defined($node1_orientation) && defined($node2_id) && defined($node2_orientation) && defined($cov)) == 0) {
+		if ((defined($node1_id) && defined($node1_start) && defined($node2_id) && defined($node2_stop) && defined($cov)) == 0) {
 			error("invalid format found in pack edge table: $pack_file\n\t$line");
 		}
 
@@ -310,11 +336,11 @@ sub parse_pack_file {
 			}
 		}
 
-		if (! exists($gfa_nodes{$node1_id}) || ! exists($gfa_nodes{$node2_id})) {
+		if (! exists($vcf_nodes{$node1_id}) || ! exists($vcf_nodes{$node2_id})) {
 			next();
 		}
 
-		$pack_covs{$file_base}{$node1_id}{$node2_id} = $cov;
+		$pack_covs{$pack_label}{$node1_id}{$node2_id} = $cov;
 	}
 
 	close($pack_fh);
@@ -327,7 +353,7 @@ sub parse_pack_file {
 			mkdir($hist_dir) or error("$!");
 		}
 
-		my $cov_histo_file = "$hist_dir/$file_base.cov.histo";
+		my $cov_histo_file = "$hist_dir/$pack_label.cov.histo";
 
 		open(COV, '>', $cov_histo_file) or error("can't open cov histo file: $!");
 
@@ -344,9 +370,9 @@ sub parse_pack_file {
 			mkdir($gs_dir) or error("$!");
 		}
 
-		my $gs_base = "$gs_dir/$file_base";
+		my $gs_base = "$gs_dir/$pack_label";
 
-		my $gs_cmd = "$gs_path -i $cov_histo_file -o $gs_dir -k $kmer_size -p $ploidy -n $file_base 1> $gs_base.gs.stdout 2> $gs_base.gs.stderr";
+		my $gs_cmd = "$gs_path -i $cov_histo_file -o $gs_dir -k $kmer_size -p $ploidy -n $pack_label 1> $gs_base.gs.stdout 2> $gs_base.gs.stderr";
 
 		system($gs_cmd);
 	}
@@ -356,9 +382,21 @@ sub parse_pack_file {
 
 
 sub parse_gfa_var_file {
-	open(GFA_VARS, '<', $gfa_var_file) or error("can't open gfa var file: $!");
+	my $gfa_var_fh;
 
-	while (my $line = <GFA_VARS>) {
+	if ($gfa_var_file =~ /\.gz$/) {
+		open($gfa_var_fh, '-|', "gzip -dc $gfa_var_file") or error("can't open $gfa_var_file: $!");
+	}
+
+	elsif ($gfa_var_file =~ /\.bz2$/) {
+		open($gfa_var_fh, '-|', "bzip2 -dc $gfa_var_file") or error("can't open $gfa_var_file: $!");
+	}
+
+	else {
+		open($gfa_var_fh, '<', $gfa_var_file) or error("can't open $gfa_var_file: $!");
+	}
+
+	while (my $line = <$gfa_var_fh>) {
 		chomp($line);
 
 		if ($line =~ /^#/) {
@@ -371,48 +409,109 @@ sub parse_gfa_var_file {
 			next();
 		}
 
-		if ($pos =~ /\-/) {
-			if ($rm_inv_head == 1) {
-				next();
+		my $rec_id = "$chr\t$pos\t$id";
+		my @link_nodes = ();
+
+		if (! defined($deconstruct_format)) {
+			if ($info =~ /AT\=/) {
+				$deconstruct_format = 1;
 			}
 
-			$pos =~ s/\-$//;
+			else {
+				$deconstruct_format = 0;
+			}
 		}
 
-		my $type;
+		# PanPipes style graph variants
+		if ($deconstruct_format == 0) {
+			if ($pos =~ /\-/) {
+				if ($rm_inv_head == 1) {
+					next();
+				}
 
-		if ($ref =~ s/^complex\.//) {
-			$type = 'complex';
+				$pos =~ s/\-$//;
+			}
+
+			my $type;
+
+			if ($ref =~ s/^complex\.//) {
+				$type = 'complex';
+			}
+
+			elsif ($ref =~ s/^multiPath\.//i) {
+				$type = 'multipath';
+			}
+
+			else {
+				$type = 'snp';
+
+				($ref, $alts) = split('-', $id);
+			}
+
+			my @alts = split(',', $alts);
+			@link_nodes = ($ref, @alts);
+
+			my $head_node = $pos;
+
+			foreach my $index (0..$#link_nodes) {
+				$link_nodes[$index] = "$head_node\t$link_nodes[$index]";
+			}
 		}
 
-		elsif ($ref =~ s/^multiPath\.//i) {
-			$type = 'multipath';
+		# vg deconstruct/minigraph-cactus style graph variants
+		elsif ($deconstruct_format == 1) {
+			foreach my $info_field (split(';', $info)) {
+				if ($info_field =~ /^AT\=/) {
+					$info_field =~ s/^AT\=//;
+
+					my %node_pairs = ();
+
+					foreach my $allele_node_str (split(',', $info_field)) {
+						$allele_node_str =~ s/[<>]/,/g;
+						$allele_node_str =~ s/^,//;
+
+						my @allele_nodes = split(',', $allele_node_str);
+
+						foreach my $trailing_index (1..$#allele_nodes) {
+							$node_pairs{$allele_nodes[$trailing_index - 1]}{$allele_nodes[$trailing_index]}++;
+						}
+					}
+
+					foreach my $allele_node_str (split(',', $info_field)) {
+						$allele_node_str =~ s/[<>]/,/g;
+						$allele_node_str =~ s/^,//;
+
+						my @allele_nodes = split(',', $allele_node_str);
+
+						foreach my $trailing_index (1..$#allele_nodes) {
+							my $leading_node = $allele_nodes[$trailing_index - 1];
+							my $trailing_node = $allele_nodes[$trailing_index];
+
+							if ($node_pairs{$leading_node}{$trailing_node} > 1) {
+								next();
+							}
+
+							push(@link_nodes, "$leading_node\t$trailing_node");
+							last();
+						}
+					}
+				}
+			}
 		}
 
-		else {
-			$type = 'snp';
+		$rec_id_allele_counts{$rec_id} = $#link_nodes + 1;
 
-			($ref, $alts) = split('-', $id);
-		}
+		foreach my $gt (0..$#link_nodes) {
+			my $link_nodes = $link_nodes[$gt];
+			my ($leading_node, $trailing_node) = split(/\t/, $link_nodes);
 
-		my @alts = split(',', $alts);
-		my @alleles = ($ref, @alts);
-		my $head_node = $pos;
-		my $rec_id = "$chr\t$pos\t$id";
-
-		$rec_id_allele_counts{$rec_id} = $#alleles + 1;
-		$gfa_nodes{$head_node}++;
-
-		foreach my $gt (0..$#alleles) {
-			my $node = $alleles[$gt];
-
-			$gfa_nodes{$node}++;
-			$rec_gt_nodes{$rec_id}{$gt} = $node;
-			$rec_node_gts{$rec_id}{$node} = $gt;
+			$vcf_nodes{$leading_node}++;
+			$vcf_nodes{$trailing_node}++;
+			$rec_gt_nodes{$rec_id}{$gt} = $link_nodes;
 		}
 	}
 
-	close(GFA_VARS);
+	close($gfa_var_fh);
 
 	return(0);
 }
@@ -447,7 +546,7 @@ sub arg_error {
 		print(STDERR "error: $msg\n\n");
 	}
 
-	print("use option -h or --help to display help menu\n");
+	print(STDERR "use option -h or --help to display help menu\n");
 
 	exit(0);
 }
@@ -459,7 +558,8 @@ sub parse_args {
 	}
 
 	GetOptions ('v|var=s' => \$gfa_var_file,
-				'p|pack=s{,}' => \@pack_files,
+				'p|pack=s' => \$pack_file,
+				'l|label=s' => \$pack_label,
 				'packlist=s' => \$pack_list_file,
 				'ploidy=i' => \$ploidy,
 				'rm_inv_head' => \$rm_inv_head,
@@ -482,13 +582,39 @@ sub parse_args {
 		arg_error('gfa variants file required');
 	}
 
+	if (defined($pack_file)) {
+		push(@pack_files, $pack_file);
+		$pack_file_counts{$pack_file}++;
+
+		if (defined($pack_label)) {
+			$pack_label =~ s/\t/_/g;
+			$pack_labels{$pack_file} = $pack_label;
+			$pack_label_counts{$pack_label}++;
+		}
+	}
+
 	if (defined($pack_list_file)) {
 		open(PACKLIST, '<', $pack_list_file) or error("can't open pack list file: $!");
 
 		foreach my $line (<PACKLIST>) {
 			chomp($line);
 
-			push(@pack_files, $line);
+			my ($file, $label) = split(/\t/, $line);
+
+			if (exists($pack_file_counts{$file})) {
+				warning("duplicate pack file found: $file, only the first occurence will be processed");
+
+				next();
+			}
+
+			push(@pack_files, $file);
+			$pack_file_counts{$file}++;
+
+			if (defined($label)) {
+				$label =~ s/\t/_/g;
+				$pack_labels{$file} = $label;
+				$pack_label_counts{$label}++;
+			}
 		}
 
 		close(PACKLIST);
@@ -496,6 +622,12 @@ sub parse_args {
 
 	if (! @pack_files) {
 		arg_error('at least 1 pack table file required');
+	}
+
+	foreach my $label (keys %pack_label_counts) {
+		if (scalar($pack_label_counts{$label}) > 1) {
+			warning("duplicate pack label found: $label");
+		}
 	}
 
 	if ($ploidy != 1 && $ploidy != 2) {
@@ -560,13 +692,9 @@ Brian Abernathy
 
 =head2 general options
 
- -v --var       gfa variants file (required)
-
- -p --pack      vg pack edge table(s)
-                  ex: -p sample.1.pack.edge.table -p sample.2.pack.edge.table.gz
-
- --packlist     text file containing list of pack edge tables
-                  (1 file per line)
+ -v --var       graph variants file (required)
+                  can parse either vg deconstruct/minigraph-cactus
+                  format or gfa_variants.pl (PanPipes) format 
 
 1 or more vg (https://github.com/vgteam/vg) pack edge tables may be
 specified using -p/--pack and/or --packlist. Pack edge tables are
@@ -574,18 +702,33 @@ generated using the `vg pack -D` command. Pack edge tables may be
 uncompressed or compressed using either gzip or bzip2. (.gz or .bz2
 file extension)
 
+For a single pack table and label use -p/--pack and -l/--label. For
+multiple pack table files and labels use --packlist.
+
+ -p --pack      vg pack edge table
+                  ex: -p sample.1.pack.edge.table
+                  ex: -p sample.2.pack.edge.table.gz
+
+ -l --label     vg pack edge table label displayed in vcf header
+
+ --packlist     text file containing list of pack edge table files
+                  and labels (labels optional but recommended)
+                  (1 file and label per line, tab-delimited)
+
  --ploidy       1 (haploid) or 2 (diploid) currently supported
                   default: 1
 
- --rm_inv_head  remove variants with inverted head node
-                  default: disabled
-                 
-Inversion variants can result in a negative sign prefix in the 'POS'
+Variants in gfa_variants.pl (PanPipes) format can contain inversion
+variants, which can result in a negative sign prefix in the 'POS'
 field head node id. Conventionally, this field represents the position
 in the reference genome and negative values may cause issues with tools
 that use vcfs. To remove such variants from vcf ouput, use --rm_inv_head.
 Note, the reciprocal variant of the inversion should be called regardless,
 so the variant information is still retained for most practical purposes. 
+
+ --rm_inv_head  remove variants with inverted head node
+                only applies to gfa_variants.pl (PanPipes) format
+                  default: disabled
 
 =head2 genotyping options
 
