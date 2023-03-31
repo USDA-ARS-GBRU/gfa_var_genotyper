@@ -15,6 +15,7 @@ my %paths = ();
 my %seqs = ();
 my %inv_head_nodes = ();
 my @genos = ();
+my $use_w_lines = 0;
 
 parse_args();
 parse_gfa_file();
@@ -33,8 +34,39 @@ sub call_vars {
 		my @ordered_nodes = ();
 
 		foreach my $geno (sort keys %{$paths{$chr}}) {
-			my ($rec_type, $path_name, $nodes, $overlaps) = split(/\t/, $paths{$chr}{$geno});
-			my @nodes = split(',', $nodes);
+			my ($rec_type, $path_name, $nodes, $overlaps);
+			my @nodes = ();
+
+			if ($use_w_lines == 0) {
+				($rec_type, $path_name, $nodes, $overlaps) = split(/\t/, $paths{$chr}{$geno});
+				@nodes = split(',', $nodes);
+			}
+
+			else {
+				my ($rec_type, $sample, $hap_index, $seq_id, $seq_start, $seq_end, $walk) = split(/\t/, $paths{$chr}{$geno});
+				my @walk_comps =  split(/(<|>)/,  $walk);
+
+				$path_name = $seq_id;
+
+				my $index = 1;
+
+				while ($index < $#walk_comps) {
+#print(STDOUT "$index: $walk_comps[$index]\t$walk_comps[$index + 1]\n");
+					
+					my $orientation = '+';
+
+					if ($walk_comps[$index] eq '<') {
+						$orientation = '-';
+					}
+
+					my $node = "$walk_comps[$index + 1]"."$orientation";
+#print(STDOUT "node: $node\n");
+
+					push(@nodes, $node);
+
+					$index += 2;
+				}
+			}
 
 			foreach my $node_index (0..$#nodes - 1) {
 				my $node1 = $nodes[$node_index];
@@ -200,13 +232,13 @@ sub parse_gfa_file {
 	while (my $line = <GFA>) {
 		chomp($line);
 
-		if ($line =~ /^S/) {
+		if ($line =~ /^S\t/) {
 			my ($rec_type, $seg, $seq) = split(/\t/, $line);
 
 			$seqs{$seg} = $seq;
 		}
 
-		elsif ($line =~ /^P/) {
+		elsif ($line =~ /^P\t/) {
 			my ($rec_type, $path_name, $nodes, $overlaps) = split(/\t/, $line);
 			my ($path_geno, $path_chr) = split(/$chr_delim/, $path_name);
 
@@ -223,6 +255,18 @@ sub parse_gfa_file {
 
 			$genos{$path_geno}++;
 			$paths{$path_chr}{$path_geno} = $line;
+		}
+
+		elsif ($line =~ /^W\t/) {
+			my ($rec_type, $sample, $hap_index, $seq_id, $seq_start, $seq_end, $walk) = split(/\t/, $line);
+
+			if ($sample eq '_MINIGRAPH_') {
+				next();
+			}
+
+			$genos{$sample}++;
+			$paths{$seq_id}{$sample} = $line;
+			$use_w_lines = 1;
 		}
 	}
 
