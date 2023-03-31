@@ -2,6 +2,7 @@
 
 use Getopt::Long;
 use Pod::Usage;
+use POSIX;
 
 use strict;
 use warnings;
@@ -16,11 +17,7 @@ my $help;
 my %coords = ();
 my @placeholder_seqs = ();
 
-$placeholder_seqs[0] = 'A' x 10;
-$placeholder_seqs[1] = 'C' x 10;
-$placeholder_seqs[2] = 'G' x 10;
-$placeholder_seqs[3] = 'T' x 10;
-
+pop_placeholder_seqs();
 parse_args();
 parse_coords();
 parse_vcf();
@@ -73,7 +70,21 @@ sub parse_coords {
 
 		$coords_chrs{$path_chr}++;
 		$coords_genos{$path_geno}++;
-		$coords{$node}{$path_geno} = "$path_chr:$start:$stop:$orientation";
+
+		my $update_coord_rec = 1;
+
+		# keep numerically first node, when node occurs multiple times in a genotype
+		if (exists($coords{$node}{$path_geno})) {
+			my ($cur_path_chr, $cur_start, $cur_stop, $cur_orientation) = split(/:/, $coords{$node}{$path_geno});
+
+			if ($start >= $cur_start) {
+				$update_coord_rec = 0;
+			}
+		}
+
+		if ($update_coord_rec == 1) {
+			$coords{$node}{$path_geno} = "$path_chr:$start:$stop:$orientation";
+		}
 	}
 
 	close($fh);
@@ -190,6 +201,32 @@ sub parse_vcf {
 	}
 
 	close(VCF);
+
+	return(0);
+}
+
+
+sub pop_placeholder_seqs {
+	my @chars = ();
+
+	$chars[0] = 'A';
+	$chars[1] = 'C';
+	$chars[2] = 'G';
+	$chars[3] = 'T';
+
+	my $index = 0;
+	my $max_seqs = 100;
+	my $base_char_count = 10;
+
+	while ($index < $max_seqs) {
+		my $add_chars = floor($index / 4);
+		my $char_count = $base_char_count + $add_chars;
+		my $char_index = $index % 4;
+
+		$placeholder_seqs[$index] = $chars[$char_index] x $char_count;
+
+		$index++;
+	}
 
 	return(0);
 }
