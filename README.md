@@ -70,9 +70,9 @@ Options:
 
   general options:
 
-     -v --var       graph variants file (required)
-                      can parse either vg deconstruct/minigraph-cactus
-                      format or gfa_variants.pl (PanPipes) format
+     -v --var        graph variants file (required)
+                       can parse either vg deconstruct/minigraph-cactus
+                       format or gfa_variants.pl (PanPipes) format
 
     1 or more vg (https://github.com/vgteam/vg) pack edge tables may be
     specified using -p/--pack and/or --packlist. Pack edge tables are
@@ -83,31 +83,34 @@ Options:
     For a single pack table and label use -p/--pack and -l/--label. For
     multiple pack table files and labels use --packlist.
 
-     -p --pack      vg pack edge table
-                      ex: -p sample.1.pack.edge.table
-                      ex: -p sample.2.pack.edge.table.gz
+     -p --pack       vg pack edge table
+                       ex: -p sample.1.pack.edge.table
+                       ex: -p sample.2.pack.edge.table.gz
 
-     -l --label     vg pack edge table label displayed in vcf header
+     -l --label      vg pack edge table label displayed in vcf header
 
-     --packlist     text file containing list of pack edge table files
-                      and labels (labels optional but recommended)
-                      (1 file and label per line, tab-delimited)
+     --packlist      text file containing list of pack edge table files
+                       and labels (labels optional but recommended)
+                       (1 file and label per line, tab-delimited)
 
-     --ploidy       1 (haploid) or 2 (diploid) currently supported
-                      default: 1
+     --ploidy        1 (haploid) or 2 (diploid) currently supported
+                       default: 1
+
+     --no_graph_gts  suppress printing of graph genotypes
 
     Variants in gfa_variants.pl (PanPipes) format can contain inversion
-    variants, which can result in a negative sign prefix in the 'POS'
-    field head node id. Conventionally, this field represents the position
-    in the reference genome and negative values may cause issues with tools
-    that use vcfs. To remove such variants from vcf ouput, use
-    --rm_inv_head. Note, the reciprocal variant of the inversion should be
-    called regardless, so the variant information is still retained for most
+    variants, which can result in a negative sign prefix in the 'POS' field
+    head node id. Conventionally, this field represents the position in the
+    reference genome and negative values may cause issues with tools that
+    use vcfs. To remove such variants from vcf ouput, use --rm_inv_head.
+    Note, the reciprocal variant of the inversion should be called
+    regardless, so the variant information is still retained for most
     practical purposes.
 
-     --rm_inv_head  remove variants with inverted head node
-                    only applies to gfa_variants.pl (PanPipes) format
-                      default: disabled
+     --rm_inv_head   remove variants with inverted head node
+                       only applies to gfa_variants.pl (PanPipes) format
+                       default: disabled
+
   genotyping options:
 
     *Currently dynamic, model-based thresholds have not been fully
